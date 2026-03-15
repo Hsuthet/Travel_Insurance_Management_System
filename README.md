@@ -1,59 +1,107 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+🛠 Prerequisites
+Before setting up, ensure you have the following installed:
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+PHP >= 8.2
 
-## About Laravel
+Composer
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Node.js & NPM
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+MySQL (XAMPP / WAMP)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+📥 Local Setup Instructions
+Follow these steps to get the project running on your local machine:
 
-## Learning Laravel
+1. Clone the Repository
+Bash
+git clone https://github.com/YourUsername/travel-insurance-system.git
+cd travel-insurance-system
+2. Install Dependencies
+Bash
+# Install PHP packages
+composer install
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+# Install Frontend packages
+npm install
+3. Environment Configuration
+Copy the example environment file and generate a unique application key:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Bash
+cp .env.example .env
+php artisan key:generate
+4. Database Setup
+Create a database named travel in your local MySQL.
 
-## Laravel Sponsors
+Update your .env file with your database credentials:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Code snippet
+DB_DATABASE=travel
+DB_USERNAME=root
+DB_PASSWORD=your_password
+Run migrations and seed the database with initial data (Plans, Admin user, etc.):
 
-### Premium Partners
+Bash
+php artisan migrate --seed
+5. Start the Application
+You will need two terminal windows:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Terminal 1 (Backend):
 
-## Contributing
+Bash
+php artisan serve
+Terminal 2 (Frontend):
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Bash
+npm run dev
+🗄️ Database Schema
+The system consists of the following core tables:
 
-## Code of Conduct
+users: Authentication and Roles (Admin).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+customers: Personal details of the insured.
 
-## Security Vulnerabilities
+plans: Available insurance packages.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+benefits: Available benefits
 
-## License
+benefit-types: Available benefit-types.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+contracts: Central table linking customers, plans, and travel info.
+
+claims: Insurance claim management.
+
+payments: Transaction history.
+
+beneficiaries: person who get the insurance when the insured person is death.
+
+declarations:Storing which plan has which declaration
+
+
+
+📬 Contributing
+Create a new branch for your task: git checkout -b feature/task-name
+
+Commit your changes: git commit -m "Add feature description"
+
+Push to the branch: git push origin feature/task-name
+
+Create a Pull Request (PR) for the Lead to review.
+
+Lead's Note:
+"Please ensure you run the --seed flag during migration to get the initial Insurance Plans data. If you encounter any issues with the .env setup, contact me immediately."
+
+How to save this:
+Open your project folder.
+
+Open the existing README.md file.
+
+Delete everything inside it.
+
+Paste the code above and save it.
+
+Run:
+
+Bash
+git add README.md
+git commit -m "docs: customize readme for team setup"
+git push origin main
