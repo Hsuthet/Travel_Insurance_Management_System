@@ -15,7 +15,7 @@ class Customer extends Model
 
     protected $casts = ['dob' => 'date'];
 
-    // Customer တစ်ယောက်မှာ စာချုပ် (Contracts) များစွာ ရှိနိုင်သည်
+   
     public function contracts() {
         return $this->hasMany(Contract::class, 'customer_id');
     }
