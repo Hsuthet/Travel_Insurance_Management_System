@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('benefit_types', function (Blueprint $table) {
             $table->id('benefittype_id');
-            $table->string('benefittype_name', 100)->nullable();
-            $table->text('description')->nullable();
+            $table->string('benefittype_name', 100);
+            $table->text('description');
             $table->timestamps();
             $table->softDeletes();
         });
