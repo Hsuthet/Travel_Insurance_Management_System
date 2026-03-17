@@ -21,9 +21,8 @@ return new class extends Migration
             $table->date('dob');
             $table->string('gender', 10);
             $table->string('passport', 50)->nullable();
-            $table->string('nationality', 50);
             $table->string('occupation', 100);
-            $table->integer('item')->nullable();
+            $table->string('ticket_image')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
