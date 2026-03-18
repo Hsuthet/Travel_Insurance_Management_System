@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email', 150)->nullable();
             $table->string('phone', 20);
             $table->text('address');
-            $table->string('nrc', 50);
+            $table->string('nrc', 50)->nullable();
             $table->date('dob');
             $table->string('gender', 10);
             $table->string('passport', 50)->nullable();

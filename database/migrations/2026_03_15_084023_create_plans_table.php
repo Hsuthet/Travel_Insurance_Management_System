@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id('plan_id'); 
             $table->string('plan_name', 100);
             $table->integer('daily_rate');
-            $table->integer('item_rate');
             $table->longText('description');
             $table->timestamps();
             $table->softDeletes();
