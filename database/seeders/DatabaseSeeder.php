@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
         //UserSeeder::class,
         InsuranceMasterSeeder::class,
+        UserSeeder::class,
+        DeclarationSeeder::class
         ]);
     }
 }
