@@ -11,7 +11,7 @@ class Plan extends Model
 
     protected $table = 'plans';
     protected $primaryKey = 'plan_id';
-    protected $fillable = ['plan_name', 'price', 'duration_days'];
+    protected $fillable = ['plan_name', 'daily_rate', 'description'];
 
     public function benefits() {
         return $this->hasMany(Benefit::class, 'plan_id');
