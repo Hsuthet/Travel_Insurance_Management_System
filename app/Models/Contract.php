@@ -19,12 +19,12 @@ class Contract extends Model
   protected static function booted()
 {
     static::creating(function ($contract) {
-        // DB Facade ကို သုံးပြီး အကြီးဆုံး contract_id ကို ရှာပါ
+        // use DB Facade and find contract_id 
         $lastId = DB::table('contracts')->max('contract_id') ?? 0;
         
         $nextId = $lastId + 1;
 
-        // ရှေ့မှာ သုည ၇ လုံးဖြည့်ပြီး TRV-0000001 ပုံစံထုတ်ယူခြင်း
+        // TRV-00000001
         $contract->policy_no = 'TRV-' . str_pad($nextId, 7, '0', STR_PAD_LEFT);
     });
 }
