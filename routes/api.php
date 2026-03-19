@@ -21,11 +21,15 @@ Route::get('/test', function () {
 Route::get('/plans', [PlanController::class, 'index']);
 Route::get('/plans/{id}', [PlanController::class, 'show']);
 
+Route::get('/benefits', [BenefitController::class, 'index']);
+
+
 // Apply
 Route::post('/apply', [ContractController::class, 'apply']);
 
 //Customers
-Route::post('/customers', [CustomerController::class, 'store']);
+//Route::post('/customers', [CustomerController::class, 'store']);
+Route::get('/customers',[CustomerController::class, 'index']);
 
 //Payments
 Route::post('/payments', [PaymentController::class, 'store']);
@@ -36,3 +40,4 @@ Route::post('/claims', [ClaimController::class, 'store']);
 //Benefits & Declarations
 Route::get('/plans/{plan_id}/benefits', [BenefitController::class, 'getByPlan']);
 Route::get('/plans/{plan_id}/declarations', [DeclarationController::class, 'getByPlan']);
+Route::post('/declaration-results', [DeclarationController::class, 'storeResults']);

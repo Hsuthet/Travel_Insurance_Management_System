@@ -11,7 +11,7 @@ class Beneficiary extends Model
 
     protected $table = 'beneficiaries';
     protected $primaryKey = 'beneficiary_id';
-    protected $fillable = ['name', 'email', 'phone', 'address', 'nrc', 'dob', 'gender', 'passport', 'nationality', 'occupation', 'relationship'];
+    protected $fillable = ['customer_id','name',  'phone',  'nrc',  'passport',  'relationship'];
 
-    protected $casts = ['dob' => 'datetime'];
+    // protected $casts = ['dob' => 'datetime'];
 }
