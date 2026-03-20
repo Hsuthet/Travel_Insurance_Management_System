@@ -13,6 +13,13 @@ use Exception;
 
 class ContractController extends Controller
 {
+     public function index()
+    {
+        $contracts = Contract::all();
+
+        return response()->json($contracts);
+    }
+
     public function apply(Request $request)
     {
            // 1. Validation Rules

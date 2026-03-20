@@ -24,8 +24,9 @@ Route::get('/plans/{id}', [PlanController::class, 'show']);
 Route::get('/benefits', [BenefitController::class, 'index']);
 
 
-// Apply
+// Apply,Contracts
 Route::post('/apply', [ContractController::class, 'apply']);
+Route::get('/contracts', [ContractController::class, 'index']);
 
 //Customers
 //Route::post('/customers', [CustomerController::class, 'store']);
@@ -37,7 +38,10 @@ Route::post('/payments', [PaymentController::class, 'store']);
 //Claims
 Route::post('/claims', [ClaimController::class, 'store']);
 
-//Benefits & Declarations
+//Benefits 
 Route::get('/plans/{plan_id}/benefits', [BenefitController::class, 'getByPlan']);
+Route::get('/benefits', [BenefitController::class, 'index']);
+
+//Declarations
 Route::get('/plans/{plan_id}/declarations', [DeclarationController::class, 'getByPlan']);
 Route::post('/declaration-results', [DeclarationController::class, 'storeResults']);
