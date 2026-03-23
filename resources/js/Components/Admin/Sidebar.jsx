@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { LayoutDashboard, FileText, ShieldCheck, CreditCard, PieChart, Users } from 'lucide-react';
 
 export default function Sidebar() {
     const { url, props } = usePage();
-    const userRole = props.auth.user.role;
+    const userRole = props?.auth?.user?.role ?? 'guest';
 
     const menuItems = [
         { name: 'Dash Board', icon: <LayoutDashboard size={20}/>, url: '/admin/dashboard' },
