@@ -45,3 +45,7 @@ Route::get('/benefits', [BenefitController::class, 'index']);
 //Declarations
 Route::get('/plans/{plan_id}/declarations', [DeclarationController::class, 'getByPlan']);
 Route::post('/declaration-results', [DeclarationController::class, 'storeResults']);
+
+//Payment
+
+Route::post('/payment/success/{id}', [PaymentController::class, 'store']);

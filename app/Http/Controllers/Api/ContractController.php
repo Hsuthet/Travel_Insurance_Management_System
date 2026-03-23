@@ -7,65 +7,51 @@ use Illuminate\Http\Request;
 use App\Models\Customer;
 use App\Models\Contract;
 use App\Models\Beneficiary;
+use App\Models\DeclarationResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
 class ContractController extends Controller
 {
-     public function index()
-    {
-        $contracts = Contract::all();
-
-        return response()->json($contracts);
-    }
-
     public function apply(Request $request)
     {
-           // 1. Validation Rules
+        // ✅ Validation
+        $rules = [
+            'customer_info.name'  => 'required|string|min:3',
+            'customer_info.email' => 'required|email',
+            'customer_info.phone' => ['required', 'regex:/^(09|\+959)\d{7,9}$/'],
+            'customer_info.dob'   => 'required|date',
+            'plan_id'             => 'required|exists:plans,plan_id',
+            'start_date'          => 'required|date',
+            'end_date'            => 'required|date|after_or_equal:start_date',
+            'results'             => 'required|array', // Added for declarations
+            'results.*.declaration_id' => 'required|exists:declarations,declaration_id',
+            'results.*.checked'        => 'required|boolean',
+        ];
 
-            $rules = [
-                'customer_info.name'  => 'required|string|min:3',
-                'customer_info.email' => 'required|email',
-                'customer_info.phone' => ['required', 'regex:/^(09|\+959)\d{7,9}$/'],
-                'customer_info.dob'   => 'required|date',
-                'plan_id'             => 'required|exists:plans,plan_id',
-                'start_date'          => 'required|date',
-                'end_date'            => 'required|date|after_or_equal:start_date',
-            ];
+        if ($request->plan_id == 3) {
+            $rules['beneficiary_info']              = 'required|array';
+            $rules['beneficiary_info.name']         = 'required|string';
+            $rules['beneficiary_info.phone']        = ['required', 'regex:/^(09|\+959)\d{7,9}$/'];
+            $rules['beneficiary_info.relationship'] = 'required|string';
+        }
 
-            // 2. Conditional Rules for Plan 3
-            if ($request->plan_id == 3) {
-                $rules['beneficiary_info']              = 'required|array'; // FIXED THIS LINE
-                $rules['beneficiary_info.name']         = 'required|string';
-                $rules['beneficiary_info.phone']        = ['required', 'regex:/^(09|\+959)\d{7,9}$/'];
-                $rules['beneficiary_info.relationship'] = 'required|string';
+        $request->validate($rules);
+
+        DB::beginTransaction();
+
+        try {
+            //  Save Customer
+            $customer = Customer::create($request->customer_info);
+
+            //  File Upload
+            $cancelPath = null;
+            if ($request->hasFile('ticket_image')) {
+                $cancelPath = $request->file('ticket_image')->store('contracts/cancellation', 'public');
             }
-                    
-            // 3. Custom Error Messages for Debugging
-            $messages = [
-                'plan_id.exists'                => 'Debug: The selected Plan ID does not exist in the database.',
-                'beneficiary_info.required' => 'DEBUG ERROR: Plan 3 selected but beneficiary_info object is missing from JSON.',
-                'beneficiary_info.name.required' => 'Debug: Beneficiary Name is missing but required for Plan 3.',
-                'end_date.after_or_equal'       => 'Debug: End date cannot be before the start date.',
-            ];
 
-            $request->validate($rules, $messages);
-
-            // 4. Database Transaction for Safety
-            DB::beginTransaction();
-
-            try {
-                // Save Customer
-                $customer = Customer::create($request->customer_info);
-
-                // Handle File Upload
-                $cancelPath = null;
-                if ($request->hasFile('ticket_image')) {
-                    $cancelPath = $request->file('ticket_image')->store('contracts/cancellation', 'public');
-                }
-
-            // Save Beneficiary (Including NRC/Passport for Plan 3)
+            //  Save Beneficiary (if exists)
             $beneficiaryId = null;
             if ($request->has('beneficiary_info')) {
                 $beneficiary = Beneficiary::create([
@@ -79,14 +65,14 @@ class ContractController extends Controller
                 $beneficiaryId = $beneficiary->beneficiary_id;
             }
 
-            // Calculation
+            //  Calculate premium
             $plan = \App\Models\Plan::findOrFail($request->plan_id);
             $startDate = \Carbon\Carbon::parse($request->start_date);
-            $endDate = \Carbon\Carbon::parse($request->end_date);
-            $days = $startDate->diffInDays($endDate) + 1;
+            $endDate   = \Carbon\Carbon::parse($request->end_date);
+            $days      = $startDate->diffInDays($endDate) + 1;
             $totalPremium = $plan->daily_rate * $days;
 
-            // Save Contract
+            //  Save Contract (PENDING)
             $contract = Contract::create([
                 'customer_id'    => $customer->customer_id,
                 'beneficiary_id' => $beneficiaryId,
@@ -97,29 +83,38 @@ class ContractController extends Controller
                 'destination'    => $request->destination,
                 'vehicle'        => $request->vehicle ?? null,
                 'premium_amount' => $totalPremium,
-                'nrc'            => $request->customer_info['nrc'] ?? null,
-                'passport'       => $request->customer_info['passport'] ?? null,
-                'ticket_image'   => $cancelPath,
-                'status'         => 'active'
+                'status'         => 'pending', // ✅ important
             ]);
+
+            //  Save Declaration Results
+            foreach ($request->results as $row) {
+                DeclarationResult::updateOrCreate(
+                    [
+                        'customer_id'    => $customer->customer_id,
+                        'declaration_id' => $row['declaration_id']
+                    ],
+                    [
+                        'check_result'   => $row['checked']
+                    ]
+                );
+            }
 
             DB::commit();
 
             return response()->json([
-                'status'  => 'success',
-                'message' => 'Application submitted successfully',
-                'policy_no' => $contract->policy_no
+                'status'      => 'success',
+                'message'     => 'Application submitted successfully',
+                'contract_id' => $contract->contract_id
             ], 201);
 
         } catch (Exception $e) {
             DB::rollBack();
-           
-            Log::error('Insurance Application Error: ' . $e->getMessage());
+
+            Log::error('Apply Error: ' . $e->getMessage());
 
             return response()->json([
-                'status' => 'error',
-                'message' => 'Debug Error: ' . $e->getMessage(),
-                'line' => $e->getLine()
+                'status'  => 'error',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
