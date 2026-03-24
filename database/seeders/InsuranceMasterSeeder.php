@@ -11,7 +11,6 @@ class InsuranceMasterSeeder extends Seeder
 {
     public function run()
     {
-        
         $hospital = BenefitType::create([
             'benefittype_name' => 'Hospitalization',
             'description' => 'Coverage for hospital room and board'
