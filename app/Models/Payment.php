@@ -9,7 +9,7 @@ class Payment extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'payment';
+    protected $table = 'payments';
     protected $primaryKey = 'payment_id';
     protected $fillable = ['contract_id', 'payment_amount', 'payment_method', 'status', 'pay_date'];
 

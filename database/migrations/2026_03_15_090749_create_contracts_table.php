@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('contracts', function (Blueprint $table) {
             $table->id('contract_id');
-            $table->string('policy_no')->unique();
+            $table->string('policy_no')->nullable()->unique();
             $table->foreignId('customer_id')->constrained('customers', 'customer_id');
             $table->unsignedBigInteger('beneficiary_id')->nullable();
             $table->foreign('beneficiary_id')
@@ -27,9 +27,6 @@ return new class extends Migration
             $table->string('destination', 100)->nullable();
             $table->string('vehicle', 100)->nullable();
             $table->decimal('premium_amount', 12, 2);
-            $table->string('nrc')->nullable();
-            $table->string('passport')->nullable();
-            $table->string('ticket_image')->nullable(); 
             $table->string('status', 20);
             $table->timestamps();
             $table->softDeletes();
