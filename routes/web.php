@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Api\ContractController;
 use Illuminate\Foundation\Application;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -23,9 +24,11 @@ Route::get('/', function () {
 });
 
 
-Route::middleware(['auth', 'role:superadmin'])->group(function () {
-    Route::get('/admin/users', [UserController::class, 'index']);
-});
+
+
+// Route::middleware(['auth', 'role:superadmin'])->group(function () {
+//     Route::get('/admin/users', [UserController::class, 'index']);
+// });
 
 Route::middleware(['auth', 'role:superadmin'])->prefix('admin')->group(function () {
     // List Users
@@ -50,12 +53,14 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('admin')->group(function 
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
  
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/contracts', fn() => Inertia::render('Admin/Contracts'))->name('admin.contracts');
-    Route::get('/premiums', fn() => Inertia::render('Admin/Premiums'))->name('admin.premiums');
-    
+    // Route::get('/contracts', fn() => Inertia::render('Admin/Contracts'))->name('admin.contracts');
+    // Route::get('/premiums', fn() => Inertia::render('Admin/Premiums'))->name('admin.premiums');
+   
     
 });
-
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
