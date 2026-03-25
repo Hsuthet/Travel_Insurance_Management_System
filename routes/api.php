@@ -39,7 +39,7 @@ Route::post('/payments', [PaymentController::class, 'store']);
 Route::post('/claims', [ClaimController::class, 'store']);
 
 //Benefits 
-Route::get('/plans/{plan_id}/benefits', [BenefitController::class, 'getByPlan']);
+
 Route::get('/benefits', [BenefitController::class, 'index']);
 
 //Declarations
