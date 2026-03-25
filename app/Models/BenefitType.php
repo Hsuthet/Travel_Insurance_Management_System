@@ -12,4 +12,8 @@ class BenefitType extends Model
     protected $table = 'benefit_types';
     protected $primaryKey = 'benefittype_id';
     protected $fillable = ['benefittype_name', 'description'];
+    public function benefits()
+    {
+        return $this->hasMany(Benefit::class, 'benefittype_id', 'benefittype_id');
+    }
 }

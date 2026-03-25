@@ -16,6 +16,7 @@ class Benefit extends Model
     protected $fillable = [
         'plan_id',
         'benefittype_id',
+        'max_coverage',
     ];
 
     /**
@@ -33,4 +34,5 @@ class Benefit extends Model
     {
         return $this->belongsTo(BenefitType::class, 'benefittype_id');
     }
+   
 }

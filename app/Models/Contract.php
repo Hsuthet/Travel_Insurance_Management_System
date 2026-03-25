@@ -16,18 +16,18 @@ class Contract extends Model
 
     protected $casts = ['start_date' => 'datetime', 'end_date' => 'datetime'];
 
-  protected static function booted()
-{
-    static::creating(function ($contract) {
-        // use DB Facade and find contract_id 
-        $lastId = DB::table('contracts')->max('contract_id') ?? 0;
+//   protected static function booted()
+// {
+//     static::creating(function ($contract) {
+//         // use DB Facade and find contract_id 
+//         $lastId = DB::table('contracts')->max('contract_id') ?? 0;
         
-        $nextId = $lastId + 1;
+//         $nextId = $lastId + 1;
 
-        // TRV-00000001
-        $contract->policy_no = 'TRV-' . str_pad($nextId, 7, '0', STR_PAD_LEFT);
-    });
-}
+//         // TRV-00000001
+//         $contract->policy_no = 'TRV-' . str_pad($nextId, 7, '0', STR_PAD_LEFT);
+//     });
+// }
 
 
     // Relationships

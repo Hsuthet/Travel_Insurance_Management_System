@@ -11,7 +11,6 @@ class InsuranceMasterSeeder extends Seeder
 {
     public function run()
     {
-        
         $hospital = BenefitType::create([
             'benefittype_name' => 'Hospitalization',
             'description' => 'Coverage for hospital room and board'
@@ -54,7 +53,7 @@ class InsuranceMasterSeeder extends Seeder
             'daily_rate' => 6000,
             'description' => 'Complete peace of mind'
         ]);
-        Benefit::create(['plan_id' => $premium->plan_id, 'benefittype_id' => $hospital->benefittype_id, 'max_coverage' => 250000]);
+        Benefit::create(['plan_id' => $premium->plan_id, 'benefittype_id' => $hospital->benefittype_id, 'max_coverage' => 25000]);
         Benefit::create(['plan_id' => $premium->plan_id, 'benefittype_id' => $cancellation->benefittype_id, 'max_coverage' => 20000]);
         Benefit::create(['plan_id' => $premium->plan_id, 'benefittype_id' => $death->benefittype_id, 'max_coverage' => 1000000]);
     }

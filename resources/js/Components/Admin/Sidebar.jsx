@@ -1,15 +1,14 @@
-
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { LayoutDashboard, FileText, ShieldCheck, CreditCard, PieChart, Users } from 'lucide-react';
 
 export default function Sidebar() {
     const { url, props } = usePage();
-    const userRole = props.auth.user.role;
+    const userRole = props?.auth?.user?.role ?? 'guest';
 
     const menuItems = [
         { name: 'Dash Board', icon: <LayoutDashboard size={20}/>, url: '/admin/dashboard' },
-        { name: 'Contract List', icon: <FileText size={20}/>, url: '/admin/contracts' },
+{ name: 'Contract List', icon: <FileText size={20}/>, url: route('admin.contracts.index') },
         { name: 'Insurance Premium', icon: <CreditCard size={20}/>, url: '/admin/premiums' },
         { name: 'Claims & Benefits', icon: <ShieldCheck size={20}/>, url: '/admin/claims' },
         { name: 'Reports', icon: <PieChart size={20}/>, url: '/admin/reports' },
