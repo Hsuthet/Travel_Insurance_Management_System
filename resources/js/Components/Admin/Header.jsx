@@ -20,7 +20,7 @@ const Header = ({ userName = "Guest" }) => {
 
             {/* Right Side Controls */}
             <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3">
+                {/* <div className="flex items-center gap-3">
                     <button className="p-2 bg-blue-50 text-blue-400 rounded-full hover:bg-blue-100 transition">
                         <Moon size={20} />
                     </button>
@@ -28,7 +28,7 @@ const Header = ({ userName = "Guest" }) => {
                         <Bell size={20} />
                         <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                     </button>
-                </div>
+                </div> */}
 
                 {/* User Dropdown Container */}
                 <div className="relative">
