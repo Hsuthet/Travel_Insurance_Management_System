@@ -62,39 +62,33 @@ class UserController extends Controller
 }
 public function update(Request $request, User $user)
 {
-    // 1. Validation
-    $request->validate([
-        'name'  => 'required|string|max:255',
-        'role'  => 'required|string|in:admin,superadmin',
-        // 'unique:users,email,'.$user->id  allows the current user to keep their email
+    // 1. Validation (Capture the validated data in a variable)
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'role' => 'required|string|in:admin,superadmin',
         'email' => [
             'required', 
             'email', 
             Rule::unique('users')->ignore($user->id)
         ],
-        // Password is 'nullable' so they can leave it blank to keep the old one
         'password' => 'nullable|confirmed|min:8',
     ]);
 
-    // 2. Prepare Data
-    $updateData = [
-        'name'  => $request->name,
-        'email' => $request->email,
-        'role'  => $request->role,
-    ];
-
-    // 3. Only Hash and Update password if it was provided
+    // 2. Remove password from the array if it's empty
     if ($request->filled('password')) {
-        $updateData['password'] = Hash::make($request->password);
+        $validated['password'] = Hash::make($request->password);
+    } else {
+        // If password is null/empty, remove it so we don't overwrite with null
+        unset($validated['password']);
     }
 
-    // 4. Perform Update
-    $user->update($updateData);
+    // 3. Perform Update using the validated array
+    $user->update($validated);
 
-    // 5. Redirect back to User Management with a success message
-    return redirect()->route('users.index')->with('message', 'User updated successfully!');
+    // 4. Redirect
+    return redirect()->route('users.index')
+        ->with('message', 'User account updated successfully!');
 }
-
 public function destroy(User $user)
 {
     // Prevent self-deletion
