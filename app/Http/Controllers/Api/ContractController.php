@@ -10,6 +10,7 @@ use App\Models\Beneficiary;
 use App\Models\DeclarationResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Exception;
 
@@ -23,6 +24,7 @@ class ContractController extends Controller
             'customer_info.email' => 'required|email',
             'customer_info.phone' => ['required', 'regex:/^(09|\+959)\d{7,9}$/'],
             'customer_info.dob'   => 'required|date',
+            'customer_info.tripTicket' => 'nullable|string',
             'plan_id'             => 'required|exists:plans,plan_id',
             'start_date'          => 'required|date',
             'end_date'            => 'required|date|after_or_equal:start_date',
@@ -42,12 +44,49 @@ class ContractController extends Controller
 
     DB::beginTransaction();
     try {
-        // ၂။ Save Customer (Occupation null မဖြစ်အောင် default ထည့်ပေးခြင်း)
+        // ✅ ၁။ Frontend မှ data ကို variable တစ်ခုထဲအရင်ယူပါ
         $customerData = $request->customer_info;
-        if (!isset($customerData['occupation']) || empty($customerData['occupation'])) {
-            $customerData['occupation'] = 'Other'; 
+        $imagePath = null;
+
+        // ✅ ၂။ Image Handling (Base64 to Physical File)
+        // Frontend က "tripTicket" (CamelCase) နဲ့ ပို့တာကို သေချာစစ်ပါ
+        if (!empty($customerData['tripTicket']) && str_contains($customerData['tripTicket'], 'base64')) {
+            $imageData = $customerData['tripTicket'];
+            $replace = substr($imageData, 0, strpos($imageData, ',') + 1);
+            $image = str_replace($replace, '', $imageData);
+            $image = str_replace(' ', '+', $image);
+            
+            $extension = explode('/', explode(':', substr($imageData, 0, strpos($imageData, ';')))[1])[1];
+            $imageName = 'ticket_' . time() . '_' . uniqid() . '.' . $extension;
+
+            // public/storage/tickets ထဲသို့ ပုံသိမ်းခြင်း
+            Storage::disk('public')->put('tickets/' . $imageName, base64_decode($image));
+            $imagePath = 'tickets/' . $imageName;
         }
-        $customer = Customer::create($customerData);
+
+        // ✅ ၃။ NRC Formatting (Customer အတွက်)
+        $nrcFormatted = null;
+        if (isset($customerData['nrcState']) && isset($customerData['nrcNumber'])) {
+            $nrcFormatted = $customerData['nrcState'] . '/' . 
+                            ($customerData['nrcTownship'] ?? '') . '(' . 
+                            ($customerData['nrcType'] ?? 'N') . ')' . 
+                            $customerData['nrcNumber'];
+        }
+
+        // ✅ ၄။ Save to Customer Table
+        // Table column နာမည်များ (nrc, trip_ticket) ကို Manual Mapping လုပ်ပေးရပါမည်
+        $customer = Customer::create([
+            'name'        => $customerData['name'],
+            'email'       => $customerData['email'],
+            'phone'       => $customerData['phone'],
+            'dob'         => $customerData['dob'],
+            'gender'      => $customerData['gender'] ?? 'Female',
+            'nrc'         => $nrcFormatted,
+            'passport'    => $customerData['passport'] ?? null,
+            'occupation'  => $customerData['occupation'] ?? 'Other',
+            'address'     => $customerData['address'] ?? null,
+            'ticket_image' => $imagePath, 
+        ]);
 
         // ၃။ Beneficiary Info (Null Check သေချာလုပ်ခြင်း)
         $beneficiaryId = null;
@@ -80,6 +119,9 @@ class ContractController extends Controller
                 'destination'    => $request->destination,
                 'vehicle'        => $request->vehicle ?? null,
                 'premium_amount' => $totalPremium,
+                'nrc'            => $nrcFormatted, 
+                'passport'       => $customerData['passport'] ?? null,
+                'ticket_image'   => $imagePath,
                 'status'         => 'pending', 
             ]);
 
