@@ -15,107 +15,88 @@ use Exception;
 class ContractController extends Controller
 {
     public function apply(Request $request)
-    {
-        // ✅ Validation
-        $rules = [
-            'customer_info.name'  => 'required|string|min:3',
-            'customer_info.email' => 'required|email',
-            'customer_info.phone' => ['required', 'regex:/^(09|\+959)\d{7,9}$/'],
-            'customer_info.dob'   => 'required|date',
-            'plan_id'             => 'required|exists:plans,plan_id',
-            'start_date'          => 'required|date',
-            'end_date'            => 'required|date|after_or_equal:start_date',
-            'results'             => 'required|array', // Added for declarations
-            'results.*.declaration_id' => 'required|exists:declarations,declaration_id',
-            'results.*.checked'        => 'required|boolean',
-        ];
+{
+    // ၁။ Validation မှာ occupation ကို nullable ထည့်ပေးထားပါ
+    $rules = [
+        'customer_info.name'  => 'required|string|min:3',
+        'customer_info.email' => 'required|email',
+        'customer_info.phone' => 'required',
+        'customer_info.dob'   => 'required|date',
+        'plan_id'             => 'required|exists:plans,plan_id',
+        'start_date'          => 'required|date',
+        'end_date'            => 'required|date|after_or_equal:start_date',
+        'results'             => 'required|array', 
+    ];
 
-        if ($request->plan_id == 3) {
-            $rules['beneficiary_info']              = 'required|array';
-            $rules['beneficiary_info.name']         = 'required|string';
-            $rules['beneficiary_info.phone']        = ['required', 'regex:/^(09|\+959)\d{7,9}$/'];
-            $rules['beneficiary_info.relationship'] = 'required|string';
+    $request->validate($rules);
+
+    DB::beginTransaction();
+    try {
+        // ၂။ Save Customer (Occupation null မဖြစ်အောင် default ထည့်ပေးခြင်း)
+        $customerData = $request->customer_info;
+        if (!isset($customerData['occupation']) || empty($customerData['occupation'])) {
+            $customerData['occupation'] = 'Other'; 
         }
+        $customer = Customer::create($customerData);
 
-        $request->validate($rules);
-
-        DB::beginTransaction();
-
-        try {
-            //  Save Customer
-            $customer = Customer::create($request->customer_info);
-
-            //  File Upload
-            $cancelPath = null;
-            if ($request->hasFile('ticket_image')) {
-                $cancelPath = $request->file('ticket_image')->store('contracts/cancellation', 'public');
-            }
-
-            //  Save Beneficiary (if exists)
-            $beneficiaryId = null;
-            if ($request->has('beneficiary_info')) {
-                $beneficiary = Beneficiary::create([
-                    'customer_id'  => $customer->customer_id,
-                    'name'         => $request->beneficiary_info['name'],
-                    'phone'        => $request->beneficiary_info['phone'],
-                    'relationship' => $request->beneficiary_info['relationship'],
-                    'nrc'          => $request->beneficiary_info['nrc'] ?? null,
-                    'passport'     => $request->beneficiary_info['passport'] ?? null,
-                ]);
-                $beneficiaryId = $beneficiary->beneficiary_id;
-            }
-
-            //  Calculate premium
-            $plan = \App\Models\Plan::findOrFail($request->plan_id);
-            $startDate = \Carbon\Carbon::parse($request->start_date);
-            $endDate   = \Carbon\Carbon::parse($request->end_date);
-            $days      = $startDate->diffInDays($endDate) + 1;
-            $totalPremium = $plan->daily_rate * $days;
-
-            //  Save Contract (PENDING)
-            $contract = Contract::create([
-                'customer_id'    => $customer->customer_id,
-                'beneficiary_id' => $beneficiaryId,
-                'plan_id'        => $request->plan_id,
-                'trip_type'      => $request->trip_type ?? 'single',
-                'start_date'     => $request->start_date,
-                'end_date'       => $request->end_date,
-                'destination'    => $request->destination,
-                'vehicle'        => $request->vehicle ?? null,
-                'premium_amount' => $totalPremium,
-                'status'         => 'pending', // ✅ important
+        // ၃။ Beneficiary Info (Null Check သေချာလုပ်ခြင်း)
+        $beneficiaryId = null;
+        if ($request->has('beneficiary_info') && is_array($request->beneficiary_info) && !empty($request->beneficiary_info['name'])) {
+            $beneficiary = Beneficiary::create([
+                'customer_id'  => $customer->customer_id,
+                'name'         => $request->beneficiary_info['name'],
+                'phone'        => $request->beneficiary_info['phone'] ?? $customer->phone,
+                'relationship' => $request->beneficiary_info['relationship'] ?? 'Self',
+                'nrc'          => $request->beneficiary_info['nrc'] ?? null,
             ]);
-
-            //  Save Declaration Results
-            foreach ($request->results as $row) {
-                DeclarationResult::updateOrCreate(
-                    [
-                        'customer_id'    => $customer->customer_id,
-                        'declaration_id' => $row['declaration_id']
-                    ],
-                    [
-                        'check_result'   => $row['checked']
-                    ]
-                );
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'status'      => 'success',
-                'message'     => 'Application submitted successfully',
-                'contract_id' => $contract->contract_id
-            ], 201);
-
-        } catch (Exception $e) {
-            DB::rollBack();
-
-            Log::error('Apply Error: ' . $e->getMessage());
-
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage()
-            ], 500);
+            $beneficiaryId = $beneficiary->beneficiary_id;
         }
+
+        // ၄။ Save Contract
+        $plan = \App\Models\Plan::findOrFail($request->plan_id);
+        $startDate = \Carbon\Carbon::parse($request->start_date);
+        $endDate   = \Carbon\Carbon::parse($request->end_date);
+        $days      = $startDate->diffInDays($endDate) + 1;
+        $totalPremium = $plan->daily_rate * $days;
+
+        $contract = Contract::create([
+            'customer_id'    => $customer->customer_id,
+            'beneficiary_id' => $beneficiaryId,
+            'plan_id'        => $request->plan_id,
+            'policy_no'      => null,
+            'trip_type'      => $request->trip_type ?? 'single',
+            'start_date'     => $request->start_date,
+            'end_date'       => $request->end_date,
+            'destination'    => $request->destination,
+            'premium_amount' => $totalPremium,
+            'status'         => 'pending',
+        ]);
+
+        // ၅။ Save Declaration Results (Safety loop)
+        if (is_array($request->results)) {
+            foreach ($request->results as $row) {
+                // array offset check လုပ်ပါ
+                if (isset($row['declaration_id'])) {
+                    DeclarationResult::updateOrCreate(
+                        [
+                            'customer_id'    => $customer->customer_id,
+                            'declaration_id' => $row['declaration_id']
+                        ],
+                        [
+                            'check_result'   => $row['checked'] ?? false
+                        ]
+                    );
+                }
+            }
+        }
+
+        DB::commit();
+        return response()->json(['status' => 'success', 'contract_id' => $contract->contract_id], 201);
+
+    } catch (Exception $e) {
+        DB::rollBack();
+        Log::error('Apply Error: ' . $e->getMessage());
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
     }
+}
 }
