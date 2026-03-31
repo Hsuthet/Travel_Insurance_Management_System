@@ -10,13 +10,14 @@ use App\Models\Beneficiary;
 use App\Models\DeclarationResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 use Exception;
 
 class ContractController extends Controller
 {
     public function apply(Request $request)
     {
-        // ✅ Validation
+        // Validation
         $rules = [
             'customer_info.name'  => 'required|string|min:3',
             'customer_info.email' => 'required|email',
@@ -25,7 +26,7 @@ class ContractController extends Controller
             'plan_id'             => 'required|exists:plans,plan_id',
             'start_date'          => 'required|date',
             'end_date'            => 'required|date|after_or_equal:start_date',
-            'results'             => 'required|array', // Added for declarations
+            'results'             => 'required|array', 
             'results.*.declaration_id' => 'required|exists:declarations,declaration_id',
             'results.*.checked'        => 'required|boolean',
         ];
@@ -83,7 +84,7 @@ class ContractController extends Controller
                 'destination'    => $request->destination,
                 'vehicle'        => $request->vehicle ?? null,
                 'premium_amount' => $totalPremium,
-                'status'         => 'pending', // ✅ important
+                'status'         => 'pending', 
             ]);
 
             //  Save Declaration Results
@@ -118,4 +119,43 @@ class ContractController extends Controller
             ], 500);
         }
     }
+
+
+/**
+ * Admin Approves the application
+ */
+public function approve($id)
+{
+    $contract = Contract::findOrFail($id);
+    
+    if ($contract->status !== 'pending') {
+        return response()->json(['message' => 'Only pending contracts can be approved'], 400);
+    }
+
+    $contract->update(['status' => 'wait_pay']);
+    
+    return response()->json(['message' => 'Contract approved. Waiting for payment.']);
+}
+
+/**
+ * Admin Rejects the application
+ */
+public function reject($id)
+{
+    $contract = Contract::findOrFail($id);
+    $contract->update(['status' => 'rejected']);
+    
+    return response()->json(['message' => 'Contract rejected.']);
+}
+
+/**
+ * Admin Cancels an existing contract
+ */
+public function cancel($id)
+{
+    $contract = Contract::findOrFail($id);
+    $contract->update(['status' => 'canceled']);
+    
+    return response()->json(['message' => 'Contract has been canceled.']);
+}
 }

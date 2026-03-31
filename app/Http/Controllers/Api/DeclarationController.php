@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Declaration;
 use Illuminate\Http\Request;
-use Illuminate\Http\Request;
 
 class DeclarationController extends Controller
 {
@@ -19,6 +18,5 @@ class DeclarationController extends Controller
             return response()->json(['message' => 'No data found'], 404);
         }
         return response()->json($declarations);
-    }
     }
 }
