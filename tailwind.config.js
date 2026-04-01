@@ -19,4 +19,12 @@ export default {
     },
 
     plugins: [forms],
+    safelist: [
+  'bg-[#FF8A65]',
+  'bg-[#4FC3F7]',
+  'bg-[#4CAF50]',
+  'bg-[#F06292]',
+  'bg-[#FDD835]',
+  'bg-[#E53935]',
+],
 };

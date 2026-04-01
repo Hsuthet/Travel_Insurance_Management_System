@@ -16,22 +16,16 @@ class Contract extends Model
 
     protected $casts = ['start_date' => 'datetime', 'end_date' => 'datetime'];
 
-//   protected static function booted()
-// {
-//     static::creating(function ($contract) {
-//         // use DB Facade and find contract_id 
-//         $lastId = DB::table('contracts')->max('contract_id') ?? 0;
-        
-//         $nextId = $lastId + 1;
-
-//         // TRV-00000001
-//         $contract->policy_no = 'TRV-' . str_pad($nextId, 7, '0', STR_PAD_LEFT);
-//     });
-// }
-
-
+// In Contract.php Model
+public function getIsExpiredAttribute() {
+    return now()->gt($this->end_date);
+}
     // Relationships
-    public function customer() { return $this->belongsTo(Customer::class, 'customer_id'); }
+    public function customer()
+{
+    // belongsTo(RelatedModel, foreign_key_on_this_table, owner_key_on_target_table)
+    return $this->belongsTo(Customer::class, 'customer_id', 'customer_id');
+}
     public function plan() { return $this->belongsTo(Plan::class, 'plan_id'); }
     public function beneficiary() { return $this->belongsTo(Beneficiary::class, 'beneficiary_id'); }
     

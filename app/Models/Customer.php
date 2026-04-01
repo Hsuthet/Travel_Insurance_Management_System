@@ -11,7 +11,7 @@ class Customer extends Model
 
     protected $table = 'customers';
     protected $primaryKey = 'customer_id';
-    protected $fillable = ['name', 'email', 'phone', 'address', 'nrc', 'dob', 'gender', 'passport', 'nationality', 'occupation', 'item'];
+    protected $fillable = ['name', 'email', 'phone', 'address', 'nrc', 'dob', 'gender', 'passport', 'nationality', 'occupation', 'item', 'ticket_image'];
 
     protected $casts = ['dob' => 'date'];
 
