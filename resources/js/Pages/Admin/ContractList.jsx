@@ -60,7 +60,16 @@ const renderStatus = (status) => {
     };
 
     const columns = [
-        { label: 'Contract ID', key: 'contract_id' },
+        { 
+    label: 'No.', 
+    key: 'index', 
+    render: (_, __, index) => {
+        // Dynamically use the per_page value from your inertia props
+        const currentPage = contracts.current_page || 1;
+        const perPage = contracts.per_page || 10; 
+        return <span>{(currentPage - 1) * perPage + (index + 1)}</span>;
+    }
+},
         { label: 'Policy No', key: 'policy_no', render: (val) => val || '-' },
         { 
             label: 'Customer Name', 

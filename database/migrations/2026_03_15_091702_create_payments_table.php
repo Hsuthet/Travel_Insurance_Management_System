@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id('payment_id');
-            $table->foreignId('contract_id')->constrained('contracts', 'contract_id')->onDelete('cascade');
+           $table->string('contract_id', 20);
+
+        // 2. Add the foreign key manually
+        $table->foreign('contract_id')
+              ->references('contract_id')
+              ->on('contracts')
+              ->onDelete('cascade');
             $table->integer('payment_amount')->default(0);
             $table->string('payment_method', 100);
             $table->string('status', 100)->default('pending');

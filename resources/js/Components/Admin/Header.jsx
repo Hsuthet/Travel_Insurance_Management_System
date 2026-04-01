@@ -1,17 +1,27 @@
-import React, { useState } from 'react'; // Added useState
-import { Moon, Bell, ChevronDown, LogOut } from 'lucide-react'; // Added LogOut icon
-import { Link } from '@inertiajs/react'; // Import Link from Inertia
+import React, { useState } from 'react';
+import { Moon, Bell, ChevronDown, LogOut } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react'; 
 
-const Header = ({ userName = "Guest" }) => {
+const Header = () => {
+    // 1. Get the authenticated user data from Inertia page props
+    const { auth } = usePage().props;
+    const user = auth.user;
+
     // State to toggle the dropdown menu
     const [isOpen, setIsOpen] = useState(false);
+
+    // Format the role to look nice (e.g., superadmin -> Super Admin)
+    const formatRole = (role) => {
+        if (!role) return 'User';
+        return role.charAt(0).toUpperCase() + role.slice(1).replace('admin', ' Admin');
+    };
 
     return (
         <header className="h-20 bg-white border-b border-blue-100 px-8 flex items-center justify-between sticky top-0 z-40">
             {/* Left Side */}
             <div>
                 <h2 className="text-2xl font-bold text-blue-600">
-                    Welcome Back!
+                    Welcome Back, {user?.name.split(' ')[0]}!
                 </h2>
                 <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
                     Travel Insurance System Portal
@@ -20,16 +30,6 @@ const Header = ({ userName = "Guest" }) => {
 
             {/* Right Side Controls */}
             <div className="flex items-center gap-6">
-                {/* <div className="flex items-center gap-3">
-                    <button className="p-2 bg-blue-50 text-blue-400 rounded-full hover:bg-blue-100 transition">
-                        <Moon size={20} />
-                    </button>
-                    <button className="p-2 bg-blue-50 text-blue-400 rounded-full hover:bg-blue-100 transition relative">
-                        <Bell size={20} />
-                        <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                    </button>
-                </div> */}
-
                 {/* User Dropdown Container */}
                 <div className="relative">
                     <div 
@@ -38,19 +38,23 @@ const Header = ({ userName = "Guest" }) => {
                     >
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 border-2 border-blue-200 overflow-hidden">
                             <img 
-                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=DBEAFE&color=2563EB&bold=true`} 
+                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=DBEAFE&color=2563EB&bold=true`} 
                                 alt="profile" 
                             />
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-center gap-1">
-                                <span className="text-sm font-bold text-slate-700 leading-none">{userName}</span>
+                                <span className="text-sm font-bold text-slate-700 leading-none">
+                                    {user?.name || 'Guest'}
+                                </span>
                                 <ChevronDown 
                                     size={14} 
                                     className={`text-slate-400 group-hover:text-blue-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
                                 />
                             </div>
-                            <span className="text-[10px] text-blue-500 font-bold uppercase">Administrator</span>
+                            <span className="text-[10px] text-blue-500 font-bold uppercase tracking-tight">
+                                {formatRole(user?.role)}
+                            </span>
                         </div>
                     </div>
 
@@ -60,7 +64,11 @@ const Header = ({ userName = "Guest" }) => {
                             {/* Backdrop to close dropdown when clicking outside */}
                             <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)}></div>
                             
-                            <div className="absolute right-0 mt-2 w-48 bg-white border border-blue-100 rounded-xl shadow-xl z-20 py-2 overflow-hidden">
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-blue-100 rounded-xl shadow-xl z-20 py-2 overflow-hidden animate-in fade-in zoom-in duration-200">
+                                <div className="px-4 py-2 border-b border-slate-50 mb-1">
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Logged in as</p>
+                                    <p className="text-xs font-medium text-slate-600 truncate">{user?.email}</p>
+                                </div>
                                 <Link
                                     href="/logout"
                                     method="post"
