@@ -41,6 +41,33 @@ class ContractController extends Controller
         }
 
     $request->validate($rules);
+    $customerData = $request->customer_info;
+$nrcFormatted = $customerData['nrcState'] . '/' . ($customerData['nrcTownship'] ?? '') . 
+                '(' . ($customerData['nrcType'] ?? 'N') . ')' . $customerData['nrcNumber'];
+
+// ၂။ အရင်ဆုံး ဒီလူ ရှိပြီးသားလား (Customer Table) မှာ အရင်ရှာပါ
+$existingCustomer = Customer::where('nrc', $nrcFormatted)
+    ->where('email', $customerData['email'])
+    ->where('phone', $customerData['phone'])
+    ->first();
+
+if ($existingCustomer) {
+    // ၃။ ဒီလူ ရှိတယ်ဆိုရင် သူ့ရဲ့ Contract တွေကို ထပ်စစ်ပါ
+    $duplicateContract = Contract::where('customer_id', $existingCustomer->customer_id)
+        ->where('destination', $request->destination)
+        ->where('start_date', $request->start_date)
+        ->where('end_date', $request->end_date)
+        ->where('vehicle', $request->vehicle ?? null)
+        ->whereIn('status', ['pending', 'wait_pay', 'approved']) 
+        ->first();
+
+    if ($duplicateContract) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'Submission Already Exist'
+        ], 400); 
+    }
+}
 
     DB::beginTransaction();
     try {
@@ -144,18 +171,20 @@ class ContractController extends Controller
         }
 
         DB::commit();
-        return response()->json(['status' => 'success', 'contract_id' => $contract->contract_id], 201);
+return response()->json([
+    'status' => true,      // 'success' အစား true လို့ ရေးပါ
+    'contract_id' => $contract->contract_id
+], 201);
 
         } catch (Exception $e) {
-            DB::rollBack();
+    DB::rollBack();
+    Log::error('Apply Error: ' . $e->getMessage());
 
-            Log::error('Apply Error: ' . $e->getMessage());
-
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+    return response()->json([
+        'status'  => false,   
+        'message' => 'Submission Fails!!!'
+    ], 500);
+}
     }
 
 
