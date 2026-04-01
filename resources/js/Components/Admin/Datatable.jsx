@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Edit3, Trash2, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit3, Trash2,ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DataTable = ({ 
     columns, 
@@ -8,11 +8,11 @@ const DataTable = ({
     onEdit, 
     onDelete, 
     renderExtra, 
-    title = "Management" 
+    title = "Management",
+    icon : Icon = ClipboardList
 }) => {
     const [search, setSearch] = useState('');
 
-    // Filtered data based on search input
     const filteredData = useMemo(() => {
         if (!search) return data;
         return data.filter(row =>
@@ -53,11 +53,10 @@ const DataTable = ({
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
                     <div className="bg-blue-600 text-white p-2 rounded-lg shadow-md shadow-blue-100">
-                        <Filter size={18} />
+                        <Icon size={18} />
                     </div>
                     <h2 className="text-lg font-bold text-slate-800">{title}</h2>
                 </div>
-
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <input
                         type="text"
@@ -66,8 +65,6 @@ const DataTable = ({
                         onChange={e => setSearch(e.target.value)}
                         className="flex-1 md:w-64 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                     />
-                    
-                    {/* This is where the "Add New" button from UserManagement will appear */}
                     {renderExtra && <div className="shrink-0">{renderExtra}</div>}
                 </div>
             </div>
@@ -90,19 +87,21 @@ const DataTable = ({
                                 <tr key={i} className="border-b border-slate-50 hover:bg-blue-50/30 transition-colors">
                                     {columns?.map(col => (
                                         <td key={col.key} className="p-4">
-                                            {col.key === 'actions' ? (
+                                            {/* PRIORITIZE CUSTOM RENDER FUNCTION */}
+                                            {col.render ? (
+                                                col.render(row[col.key], row)
+                                            ) : col.key === 'actions' ? (
+                                                /* DEFAULT FALLBACK FOR EDIT/DELETE */
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => onEdit(row.id)}
+                                                        onClick={() => onEdit?.(row.id)}
                                                         className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-                                                        title="Edit"
                                                     >
                                                         <Edit3 size={16} />
                                                     </button>
                                                     <button
-                                                        onClick={() => onDelete(row.id)}
+                                                        onClick={() => onDelete?.(row.id)}
                                                         className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-all"
-                                                        title="Delete"
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
@@ -140,7 +139,6 @@ const DataTable = ({
                     </select>
                     <span>entries</span>
                 </div>
-
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => pagination?.onPageChange?.(currentPage - 1)}
@@ -149,9 +147,7 @@ const DataTable = ({
                     >
                         <ChevronLeft size={16} />
                     </button>
-
                     <div className="flex gap-1">{renderPageNumbers()}</div>
-
                     <button
                         onClick={() => pagination?.onPageChange?.(currentPage + 1)}
                         disabled={currentPage === totalPages}

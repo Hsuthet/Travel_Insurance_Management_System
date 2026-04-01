@@ -3,15 +3,13 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\Api\{
-    PlanController,
-    CustomerController,
-    ContractController,
-    PaymentController,
-    ClaimController,
-    BenefitController,
-    DeclarationController
-};
+use App\Http\Controllers\Api\PlanController;
+use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\ContractController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ClaimController;
+use App\Http\Controllers\Api\BenefitController;
+use App\Http\Controllers\Api\DeclarationController;
 
 Route::get('/test', function () {
     return response()->json(['message' => 'API OK']);
@@ -48,4 +46,11 @@ Route::post('/declaration-results', [DeclarationController::class, 'storeResults
 
 //Payment
 
-Route::post('/payment/success/{id}', [PaymentController::class, 'store']);
+// Route::post('/payment/success/{id}', [PaymentController::class, 'store']);
+
+// Admin Contract Management
+Route::prefix('admin/contracts')->group(function () {
+    Route::patch('/{id}/approve', [ContractController::class, 'approve']);
+    Route::patch('/{id}/reject', [ContractController::class, 'reject']);
+    Route::patch('/{id}/cancel', [ContractController::class, 'cancel']);
+});

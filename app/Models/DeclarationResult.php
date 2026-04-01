@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DeclarationResult extends Model
 {
+    protected $primaryKey = 'result_id';
     protected $fillable = [
     'customer_id',
     'declaration_id',
