@@ -19,7 +19,7 @@ class ClaimController extends Controller
                 return $query->where('status', $status);
             })
             ->latest('claim_id')
-            ->paginate($request->perPage ?? 10)
+            ->paginate($request->perPage ?? 5)
             ->withQueryString();
 
         return Inertia::render('Admin/Claim', [
@@ -70,16 +70,16 @@ class ClaimController extends Controller
 
         return Inertia::render('Admin/ClaimEdit', [
             'claim' => [
-                'claim_id' => $claim->claim_id,
-                'policy_no' => $claim->policy_no,
-                'full_name' => $claim->contract->customer->name,
-                'email' => $claim->contract->customer->email,
-                'phone' => $claim->contract->customer->phone,
-                'plan_id' => $claim->plan_id,
-                'accident_date' => $claim->accident_date,
-                'claim_amount' => $claim->claim_amount,
+                'claim_id'             => $claim->claim_id,
+                'policy_no'            => $claim->policy_no,
+                'full_name'            => $claim->contract->customer->name,
+                'email'                => $claim->contract->customer->email,
+                'phone'                => $claim->contract->customer->phone,
+                'plan_id'              => $claim->plan_id,
+                'accident_date'        => $claim->accident_date,
+                'claim_amount'         => $claim->claim_amount,
                 'accident_description' => $claim->accident_description,
-                'status' => $claim->status
+                'status'               => $claim->status
             ]
         ]);
     }
@@ -94,14 +94,14 @@ class ClaimController extends Controller
         }
 
         $validated = $request->validate([
-            'claim_amount' => 'required|numeric|min:0',
+            'claim_amount'  => 'required|numeric|min:0',
             'accident_date' => 'required|date',
-            'description' => 'required|string',
+            'description'   => 'required|string',
         ]);
 
         $claim->update([
-            'claim_amount' => $validated['claim_amount'],
-            'accident_date' => $validated['accident_date'],
+            'claim_amount'         => $validated['claim_amount'],
+            'accident_date'        => $validated['accident_date'],
             'accident_description' => $validated['description'],
         ]);
 
@@ -132,7 +132,7 @@ class ClaimController extends Controller
     {
         $claim = Claim::where('claim_id', $id)->firstOrFail();
         $claim->update([
-       'status' => $request->status
+            'status' => $request->status
         ]);
 
         return redirect()->route('admin.claims.index')->with('success', 'Status is now ' . $claim->status);

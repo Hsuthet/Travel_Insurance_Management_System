@@ -7,7 +7,7 @@ import { PlusCircle, ShieldCheck, Edit2 } from 'lucide-react';
 export default function Claim({ claims, auth, filters }) {
     const [localFilters, setLocalFilters] = useState({
         status: filters?.status || '',
-        perPage: filters?.perPage || 10
+        perPage: filters?.perPage || 5
     });
 
     const handleFilterChange = (key, value) => {
@@ -28,9 +28,27 @@ export default function Claim({ claims, auth, filters }) {
     };
 
     const columns = [
-        { label: 'Claim No', key: 'claim_id' },
+        {
+            label: 'Claim No',
+            key: 'claim_id',
+            render: (row) => {
+                const index = claims.data.findIndex(item => item.claim_id === row.claim_id);
+                const currentPage = claims.current_page || 1;
+                const perPage = claims.per_page || 10;
+                return (currentPage - 1) * perPage + (index + 1);
+            }
+        },
         { label: 'Policy No', key: 'policy_no' },
-        { label: 'Benefit', key: 'benefit_id' },
+        {
+            label: 'Benefit',
+            key: 'plan_id',
+            render: (row) => {
+                if (row.plan) {
+                    return row.plan.plan_name;
+                }
+                return row.plan_id || '-';
+            }
+        },
         { label: 'Claimed Amount', key: 'claim_amount' },
         {
             label: 'Status',
@@ -62,7 +80,7 @@ export default function Claim({ claims, auth, filters }) {
                             Edit
                         </button>
                     ) : (
-                        <span className="text-slate-400 text-xs italic px-3">Locked</span>
+                        <span className="text-slate-400 text-xs italic px-3"></span>
                     )}
                 </div>
             )

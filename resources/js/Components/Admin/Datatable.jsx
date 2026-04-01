@@ -62,7 +62,7 @@ const DataTable = ({
            {/* Table Area */}
 <div className="overflow-x-auto rounded-xl border border-slate-100">
 <table className="w-full text-sm text-left border-collapse">
-<thead className="bg-slate-50 text-slate-500 uppercase text-[11px] tracking-wider font-bold">
+<thead className="bg-[#D3E3F8] text-slate-500 uppercase text-[11px] tracking-wider font-bold">
 <tr>
                            {columns?.map(col => (
 <th key={col.key} className="p-4 border-b border-slate-100">
