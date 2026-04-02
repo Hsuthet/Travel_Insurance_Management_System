@@ -9,6 +9,7 @@ use App\Models\Benefit;
 use App\Models\Plan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class ClaimController extends Controller
 {
@@ -46,16 +47,32 @@ class ClaimController extends Controller
             'description'   => 'required|string',
         ]);
 
-        Claim::create([
-            'policy_no'            => $validated['policy_no'],
-            'plan_id'              => $validated['plan_id'],
-            'claim_amount'         => $validated['claim_amount'],
-            'accident_date'        => $validated['accident_date'],
-            'accident_description' => $validated['description'],
-            'claim_date'           => now(),
-            'status'               => 'pending',
-            'benefit_id'           => 1,
-        ]);
+        $alreadyClaimed = Claim::where('policy_no', $validated['policy_no'])
+            ->whereIn('status', ['pending', 'claimed'])
+            ->exists();
+
+        if ($alreadyClaimed) {
+            return back()->withErrors([
+                'policy_no' => 'This policy number already has a pending or processed claim.'
+            ]);
+        }
+
+        DB::transaction(function () use ($validated) {
+            Claim::create([
+                'policy_no'            => $validated['policy_no'],
+                'plan_id'              => $validated['plan_id'],
+                'claim_amount'         => $validated['claim_amount'],
+                'accident_date'        => $validated['accident_date'],
+                'accident_description' => $validated['description'],
+                'claim_date'           => now(),
+                'status'               => 'pending',
+                'benefit_id'           => 1,
+            ]);
+
+            Contract::where('policy_no', $validated['policy_no'])->update([
+                'status' => 'claimed'
+            ]);
+        });
 
         return redirect()->route('admin.claims.index')->with('success', 'Claim submitted successfully!');
     }
@@ -115,13 +132,18 @@ class ClaimController extends Controller
             ->first();
 
         if ($contract && $contract->customer) {
+            $isAlreadyClaimed = Claim::where('policy_no', $policyNo)
+                ->whereIn('status', ['pending', 'claimed'])
+                ->exists();
+
             return response()->json([
-                'success'   => true,
-                'full_name' => $contract->customer->name,
-                'email'     => $contract->customer->email,
-                'phone'     => $contract->customer->phone,
-                'plan_name' => optional($contract->plan)->plan_name,
-                'plan_id'   => $contract->plan_id,
+                'success'    => true,
+                'full_name'  => $contract->customer->name,
+                'email'      => $contract->customer->email,
+                'phone'      => $contract->customer->phone,
+                'plan_name'  => optional($contract->plan)->plan_name,
+                'plan_id'    => $contract->plan_id,
+                'is_claimed' => $isAlreadyClaimed
             ]);
         }
 
@@ -141,6 +163,9 @@ class ClaimController extends Controller
     public function destroy($id)
     {
         $claim = Claim::findOrFail($id);
+        
+        Contract::where('policy_no', $claim->policy_no)->update(['status' => 'active']);
+        
         $claim->delete();
 
         return redirect()->route('admin.claims.index')->with('success', 'Claim deleted successfully');
