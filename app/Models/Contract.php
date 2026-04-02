@@ -37,4 +37,6 @@ class Contract extends Model
     
     public function payments() { return $this->hasMany(Payment::class, 'contract_id'); }
 
+    public function claims(){ return $this->hasMany(Claim::class, 'contract_id', 'contract_id');}
+
 }

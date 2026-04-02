@@ -1,9 +1,10 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\DashboardController;
+// use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\ContractController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Foundation\Application;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -52,12 +53,14 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('admin')->group(function 
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
  
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     // Route::get('/contracts', fn() => Inertia::render('Admin/Contracts'))->name('admin.contracts');
     // Route::get('/premiums', fn() => Inertia::render('Admin/Premiums'))->name('admin.premiums');
+    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports');
    
-    
 });
+    
+
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
 });
