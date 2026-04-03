@@ -59,7 +59,7 @@ const downloadExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Insurance Report');
 
-    // ၁။ Header များ သတ်မှတ်ခြင်း
+    
     const headers = [
         "Policy Number", "Customer Name", "NRC", "Phone", "Address", "DOB",
         "Plan", "Premium", "Purchase Date", "Trip Type", "Destination", "Vehicle",
@@ -68,7 +68,7 @@ const downloadExcel = async () => {
     
     const headerRow = worksheet.addRow(headers);
 
-    // Header Style ပြင်ဆင်ခြင်း (အပြာရောင် Background နှင့် စာလုံးအဖြူ Bold)
+    
     headerRow.eachCell((cell) => {
         cell.fill = {
             type: 'pattern',
@@ -79,7 +79,7 @@ const downloadExcel = async () => {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
-    // ၂။ Data များ ထည့်သွင်းခြင်း
+   
     filteredReports.forEach(r => {
         const originalReport = reports.find(orig => orig.id === r.id) || r;
         
@@ -106,8 +106,8 @@ const downloadExcel = async () => {
 
         const row = worksheet.addRow(rowData);
 
-        // ၃။ Status အလိုက် အရောင်ချယ်ခြင်း logic
-        const statusCell = row.getCell(13); // Column M (Status)
+        
+        const statusCell = row.getCell(13); 
         const statusValue = String(originalReport.status).toLowerCase();
 
         if (statusValue === 'active') {
@@ -121,7 +121,7 @@ const downloadExcel = async () => {
             statusCell.font = { color: { argb: 'B45309' }, bold: true };
         }
 
-        // Claim Status အတွက် အရောင်ချယ်ခြင်း
+       
         const claimCell = row.getCell(14); // Column N (Claim Status)
         if (String(originalReport.claim_status).toLowerCase() === 'claimed') {
             claimCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DBEAFE' } }; // Light Blue
@@ -129,12 +129,12 @@ const downloadExcel = async () => {
         }
     });
 
-    // Column Width များကို အလိုအလျောက် ညှိပေးခြင်း
+   
     worksheet.columns.forEach(column => {
         column.width = 20;
     });
 
-    // ၄။ File ကို ထုတ်ယူခြင်း (Export)
+    
     const now = new Date();
     const formattedDate = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
     
@@ -191,7 +191,7 @@ const downloadExcel = async () => {
                             <h1 className="text-2xl font-black text-blue-600 tracking-tight">Reports</h1>
                         </div>
 
-                        {/* Right Side: Filters, Dates, Buttons - အကုန်ညာဘက်ကပ်ထားသည် */}
+                        {/* Right Side: Filters, Dates, Buttons */}
                         <div className="flex flex-wrap items-center justify-end gap-3 w-full">
                             
                             {/* Dropdown Filters */}
@@ -265,7 +265,7 @@ const downloadExcel = async () => {
                 </div>
             </div>
 
-            {/* CSS Styling - အရင်အတိုင်းထားနိုင်ပါတယ် */}
+            {/* CSS Styling  */}
             <style dangerouslySetInnerHTML={{ __html: `
                 .reports-datatable-container .bg-white > div:first-child { display: none !important; }
                 .reports-datatable-container table { border: none !important; border-radius: 1.5rem !important; overflow: hidden !important; }
