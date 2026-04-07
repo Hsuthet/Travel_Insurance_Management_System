@@ -5,6 +5,7 @@ use App\Models\Contract;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class ContractController extends Controller
 {
@@ -43,25 +44,36 @@ class ContractController extends Controller
 
 public function index(Request $request)
 {
-    // 1. Start the query with the relationship
-    $query = Contract::with(['customer:customer_id,name']);
+    // 1. Start the query with relationships
+    $query = Contract::with(['customer', 'plan']);
 
-    // 2. Filter by Status
-    if ($request->filled('status')) {
+    // 2. Filter by status
+    if ($request->filled('status') && $request->status !== 'Status') {
         $query->where('status', $request->status);
     }
 
-    // 3. Filter by Date Range
+    // 3. Date Filters
     if ($request->filled('startDate')) {
-        $query->whereDate('applied_date', '>=', $request->startDate);
+        $query->whereDate('created_at', '>=', $request->startDate);
     }
     if ($request->filled('endDate')) {
-        $query->whereDate('applied_date', '<=', $request->endDate);
+        $query->whereDate('created_at', '<=', $request->endDate);
     }
 
-    // 4. Finalize: Order by latest and Paginate
-    $contracts = $query->latest()->paginate(10)->withQueryString();
+    // 4. Get results
+    $contracts = $query->latest()
+        ->paginate(10)
+        ->withQueryString();
 
+    // ✅ CHECK FOR POSTMAN / API REQUESTS
+    if ($request->wantsJson() || $request->is('api/*')) {
+        return response()->json([
+            'status' => true,
+            'contracts' => $contracts
+        ]);
+    }
+
+    // Otherwise, return for the React/Inertia frontend
     return Inertia::render('Admin/ContractList', [
         'contracts' => $contracts,
         'filters' => $request->only(['status', 'startDate', 'endDate']),
