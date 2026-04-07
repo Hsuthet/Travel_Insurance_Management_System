@@ -64,14 +64,8 @@ class Contract extends Model
         return $this->belongsTo(Beneficiary::class, 'beneficiary_id', 'beneficiary_id'); 
     }
     
-    public function payments() 
-    { 
-        return $this->hasMany(Payment::class, 'contract_id', 'contract_id'); 
-    }
+    public function payments() { return $this->hasMany(Payment::class, 'contract_id'); }
 
-    // Relationship for the claims we just built
-    public function claims() 
-    { 
-        return $this->hasMany(Claim::class, 'contract_id', 'contract_id'); 
-    }
+    public function claims(){ return $this->hasMany(Claim::class, 'contract_id', 'contract_id');}
+
 }
