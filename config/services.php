@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+  'gmo' => [
+    'site_id'      => env('GMO_SITE_ID'),
+    'site_pass'    => env('GMO_SITE_PASS'),
+    'shop_id'      => env('GMO_SHOP_ID'),   
+    'shop_pass'    => env('GMO_SHOP_PASS'), 
+    'api_base_url' => env('GMO_API_BASE_URL'),
+],
 ];

@@ -10,6 +10,8 @@ use Illuminate\Foundation\Application;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\PremiumController;
+
 use Inertia\Inertia;
 
 /*
@@ -54,7 +56,9 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('admin')->group(function 
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
  
-    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/premium', [PremiumController::class, 'index'])->name('admin.premium');
+
     // Route::get('/contracts', fn() => Inertia::render('Admin/Contracts'))->name('admin.contracts');
     // Route::get('/premiums', fn() => Inertia::render('Admin/Premiums'))->name('admin.premiums');
     Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports');
