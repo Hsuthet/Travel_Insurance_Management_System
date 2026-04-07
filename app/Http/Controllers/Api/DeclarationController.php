@@ -19,4 +19,4 @@ class DeclarationController extends Controller
         }
         return response()->json($declarations);
     }
-}
+    }
