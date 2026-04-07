@@ -18,184 +18,230 @@ use Carbon\Carbon;
 
 class ContractController extends Controller
 {
-    public function apply(Request $request)
-    {
-        // 1. Enhanced Validation
-        $rules = [
-            'customer_info.name'  => 'required|string|min:3',
-            'customer_info.email' => 'required|email',
-            'customer_info.phone' => ['required', 'regex:/^(09|\+959)\d{7,9}$/'],
-            'customer_info.dob'   => 'required|date',
-            'customer_info.nrc'   => 'required|string', 
-            'plan_id'             => 'required|exists:plans,plan_id',
-            'start_date'          => 'required|date|after_or_equal:today',
-            'end_date'            => 'required|date|after_or_equal:start_date',
-            'destination'         => 'required|string',
-            'vehicle'             => 'nullable|string',
-            'trip_type'           => 'nullable|string',
-            'results'             => 'required|array', 
-            'results.*.declaration_id' => 'required|exists:declarations,declaration_id',
-            'results.*.checked'        => 'required|boolean',
-        ];
+    public function index(Request $request)
+{
+    // 1. Start the query with relationships
+    $query = Contract::with(['customer', 'plan']);
 
-        // Conditional Beneficiary Validation for Premium Plan (ID 3)
-        if ($request->plan_id == 3) {
-            $rules['beneficiary_info']              = 'required|array';
-            $rules['beneficiary_info.name']         = 'required|string';
-            $rules['beneficiary_info.phone']        = ['required', 'regex:/^(09|\+959)\d{7,9}$/'];
-            $rules['beneficiary_info.relationship'] = 'required|string';
-        }
+    // 2. Filter by status
+    if ($request->filled('status') && $request->status !== 'Status') {
+        $query->where('status', $request->status);
+    }
+
+    // 3. Date Filters
+    if ($request->filled('startDate')) {
+        $query->whereDate('created_at', '>=', $request->startDate);
+    }
+    if ($request->filled('endDate')) {
+        $query->whereDate('created_at', '<=', $request->endDate);
+    }
+
+    // 4. Get results
+    $contracts = $query->latest()
+        ->paginate(10)
+        ->withQueryString();
+
+    //  CHECK FOR POSTMAN / API REQUESTS
+    if ($request->wantsJson() || $request->is('api/*')) {
+        return response()->json([
+            'status' => true,
+            'contracts' => $contracts
+        ]);
+    }
+
+    // Otherwise, return for the React/Inertia frontend
+    return Inertia::render('Admin/ContractList', [
+        'contracts' => $contracts,
+        'filters' => $request->only(['status', 'startDate', 'endDate']),
+    ]);
+}
+    public function apply(Request $request)
+{
+    // 1. Initial Validation
+    $rules = [
+        'customer_info.name'       => 'required|string|min:3',
+        'customer_info.email'      => 'required|email',
+        'customer_info.phone'      => ['required', 'regex:/^(09|\+959)\d{7,9}$/'],
+        'customer_info.dob'        => 'required|date',
+        'customer_info.nrcState'   => 'required',
+        'customer_info.nrcNumber'  => 'required',
+        'plan_id'                  => 'required|exists:plans,plan_id',
+        'start_date'               => 'required|date|after_or_equal:today',
+        'end_date'                 => 'required|date|after_or_equal:start_date',
+        'destination'              => 'required|string',
+        'vehicle'                  => 'required|string',
+        'results'                  => 'required|array',
+        'results.*.declaration_id' => 'required|exists:declarations,declaration_id',
+        'results.*.checked'        => 'required|boolean',
+    ];
+
+    if ($request->plan_id == 3) {
+        $rules['beneficiary_info']              = 'required|array';
+        $rules['beneficiary_info.name']         = 'required|string';
+        $rules['beneficiary_info.phone']        = ['required', 'regex:/^(09|\+959)\d{7,9}$/'];
+        $rules['beneficiary_info.relationship'] = 'required|string';
+    }
 
     $request->validate($rules);
-    $customerData = $request->customer_info;
-$nrcFormatted = $customerData['nrcState'] . '/' . ($customerData['nrcTownship'] ?? '') . 
-                '(' . ($customerData['nrcType'] ?? 'N') . ')' . $customerData['nrcNumber'];
 
-// ၂။ အရင်ဆုံး ဒီလူ ရှိပြီးသားလား (Customer Table) မှာ အရင်ရှာပါ
-$existingCustomer = Customer::where('nrc', $nrcFormatted)
-    ->where('email', $customerData['email'])
-    ->where('phone', $customerData['phone'])
-    ->first();
+    //  2. Plan-Specific Declaration Validation
+    $planId = $request->plan_id;
+   $requiredDeclarations = [
+        1 => range(1, 4),   // IDs 1, 2, 3, 4
+        2 => range(1, 8),   // IDs 1 through 8
+        3 => range(1, 12)   // IDs 1 through 12
+    ];
 
-if ($existingCustomer) {
-    // ၃။ ဒီလူ ရှိတယ်ဆိုရင် သူ့ရဲ့ Contract တွေကို ထပ်စစ်ပါ
-    $duplicateContract = Contract::where('customer_id', $existingCustomer->customer_id)
-        ->where('destination', $request->destination)
-        ->where('start_date', $request->start_date)
-        ->where('end_date', $request->end_date)
-        ->where('vehicle', $request->vehicle ?? null)
-        ->whereIn('status', ['pending', 'wait_pay', 'approved']) 
-        ->first();
+    $targetIds = $requiredDeclarations[$planId] ?? [];
+    $submittedResults = collect($request->results);
 
-    if ($duplicateContract) {
-        return response()->json([
-            'status'  => false,
-            'message' => 'Submission Already Exist'
-        ], 400); 
+    foreach ($targetIds as $id) {
+        $found = $submittedResults->where('declaration_id', $id)->first();
+        if (!$found || $found['checked'] == false) {
+            return response()->json([
+                'status'  => false,
+                'message' => "Application rejected. Requirement for Plan $planId (Declaration $id) not met."
+            ], 422);
+        }
     }
-}
 
     DB::beginTransaction();
     try {
-        // ✅ ၁။ Frontend မှ data ကို variable တစ်ခုထဲအရင်ယူပါ
         $customerData = $request->customer_info;
-        $imagePath = null;
+        
+        // 3. Format NRC String
+        $nrcFormatted = $customerData['nrcState'] . '/' . ($customerData['nrcTownship'] ?? '') .
+                        '(' . ($customerData['nrcType'] ?? 'N') . ')' . $customerData['nrcNumber'];
 
-        // ✅ ၂။ Image Handling (Base64 to Physical File)
-        // Frontend က "tripTicket" (CamelCase) နဲ့ ပို့တာကို သေချာစစ်ပါ
+        $customer = Customer::where('nrc', $nrcFormatted)->first();
+
+        // 4. Duplicate Check
+        if ($customer) {
+            $duplicateContract = Contract::where('customer_id', $customer->customer_id)
+                ->where('destination', $request->destination)
+                ->where('start_date', $request->start_date)
+                ->where('end_date', $request->end_date)
+                ->whereIn('status', ['pending', 'wait_pay', 'approved'])
+                ->first();
+
+            if ($duplicateContract) {
+                DB::rollBack();
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Submission Already Exist'
+                ], 400);
+            }
+
+            // Update existing customer profile
+            $customer->update([
+                'name'       => $customerData['name'],
+                'email'      => $customerData['email'],
+                'phone'      => $customerData['phone'],
+                'dob'        => $customerData['dob'],
+                'gender'     => $customerData['gender'] ?? $customer->gender,
+                'passport'   => $customerData['passport'] ?? $customer->passport,
+                'occupation' => $customerData['occupation'] ?? $customer->occupation,
+                'address'    => $customerData['address'] ?? $customer->address,
+            ]);
+        } else {
+            // Create new customer
+            $customer = Customer::create([
+                'name'       => $customerData['name'],
+                'email'      => $customerData['email'],
+                'phone'      => $customerData['phone'],
+                'dob'        => $customerData['dob'],
+                'gender'     => $customerData['gender'] ?? 'Female',
+                'nrc'        => $nrcFormatted,
+                'passport'   => $customerData['passport'] ?? null,
+                'occupation' => $customerData['occupation'] ?? 'Other',
+                'address'    => $customerData['address'] ?? null,
+            ]);
+        }
+
+        // 5. Image Handling
+        $imagePath = null;
         if (!empty($customerData['tripTicket']) && str_contains($customerData['tripTicket'], 'base64')) {
             $imageData = $customerData['tripTicket'];
             $replace = substr($imageData, 0, strpos($imageData, ',') + 1);
             $image = str_replace($replace, '', $imageData);
             $image = str_replace(' ', '+', $image);
-            
             $extension = explode('/', explode(':', substr($imageData, 0, strpos($imageData, ';')))[1])[1];
             $imageName = 'ticket_' . time() . '_' . uniqid() . '.' . $extension;
 
-            // public/storage/tickets ထဲသို့ ပုံသိမ်းခြင်း
             Storage::disk('public')->put('tickets/' . $imageName, base64_decode($image));
             $imagePath = 'tickets/' . $imageName;
+            $customer->update(['ticket_image' => $imagePath]);
         }
 
-        // ✅ ၃။ NRC Formatting (Customer အတွက်)
-        $nrcFormatted = null;
-        if (isset($customerData['nrcState']) && isset($customerData['nrcNumber'])) {
-            $nrcFormatted = $customerData['nrcState'] . '/' . 
-                            ($customerData['nrcTownship'] ?? '') . '(' . 
-                            ($customerData['nrcType'] ?? 'N') . ')' . 
-                            $customerData['nrcNumber'];
-        }
-
-        // ✅ ၄။ Save to Customer Table
-        // Table column နာမည်များ (nrc, trip_ticket) ကို Manual Mapping လုပ်ပေးရပါမည်
-        $customer = Customer::create([
-            'name'        => $customerData['name'],
-            'email'       => $customerData['email'],
-            'phone'       => $customerData['phone'],
-            'dob'         => $customerData['dob'],
-            'gender'      => $customerData['gender'] ?? 'Female',
-            'nrc'         => $nrcFormatted,
-            'passport'    => $customerData['passport'] ?? null,
-            'occupation'  => $customerData['occupation'] ?? 'Other',
-            'address'     => $customerData['address'] ?? null,
-            'ticket_image' => $imagePath, 
-        ]);
-
-        // ၃။ Beneficiary Info (Null Check သေချာလုပ်ခြင်း)
-        $beneficiaryId = null;
-        if ($request->has('beneficiary_info') && is_array($request->beneficiary_info) && !empty($request->beneficiary_info['name'])) {
-            $beneficiary = Beneficiary::create([
-                'customer_id'  => $customer->customer_id,
-                'name'         => $request->beneficiary_info['name'],
-                'phone'        => $request->beneficiary_info['phone'] ?? $customer->phone,
-                'relationship' => $request->beneficiary_info['relationship'] ?? 'Self',
-                'nrc'          => $request->beneficiary_info['nrc'] ?? null,
-            ]);
-            $beneficiaryId = $beneficiary->beneficiary_id;
-        }
-
-            // 7. Calculate Premium
-            $plan = Plan::where('plan_id', $request->plan_id)->firstOrFail();
-            $startDate = Carbon::parse($request->start_date);
-            $endDate   = Carbon::parse($request->end_date);
-            $days      = $startDate->diffInDays($endDate) + 1;
-            $totalPremium = $plan->daily_rate * $days;
-
-            // 8. Save Contract
-            $contract = Contract::create([
-                'contract_id'    => $this->generateContractId(),
-                'customer_id'    => $customer->customer_id,
-                'beneficiary_id' => $beneficiaryId,
-                'plan_id'        => $request->plan_id,
-                'trip_type'      => $request->trip_type ?? 'single',
-                'start_date'     => $request->start_date,
-                'end_date'       => $request->end_date,
-                'destination'    => $request->destination,
-                'vehicle'        => $request->vehicle ?? null,
-                'premium_amount' => $totalPremium,
-                // 'ticket_image'   => $ticketPath,
-                'status'         => 'pending', 
-            ]);
-
-            // 9. Save Declaration Results
-           foreach ($request->results as $row) {
-                // Manually check if it exists based on your unique criteria
-                $exists = DeclarationResult::where('customer_id', $customer->customer_id)
-                    ->where('declaration_id', $row['declaration_id'])
-                    ->first();
-
-                if ($exists) {
-                    // If it exists, update it manually without relying on 'id'
-                    DeclarationResult::where('customer_id', $customer->customer_id)
-                        ->where('declaration_id', $row['declaration_id'])
-                        ->update(['check_result' => $row['checked']]);
-                } else {
-                    // Otherwise, create a new record
-                    DeclarationResult::create([
-                        'customer_id'    => $customer->customer_id,
-                        'declaration_id' => $row['declaration_id'],
-                        'check_result'   => $row['checked']
-                    ]);
-                }
-            }
-
-        DB::commit();
-return response()->json([
-    'status' => true,      // 'success' အစား true လို့ ရေးပါ
-    'contract_id' => $contract->contract_id
-], 201);
-
-        } catch (Exception $e) {
-    DB::rollBack();
-    Log::error('Apply Error: ' . $e->getMessage());
-
-    return response()->json([
-        'status'  => false,   
-        'message' => 'Submission Fails!!!'
-    ], 500);
-}
+        // 6. Beneficiary
+        // 6. Beneficiary Logic
+$beneficiaryId = null;
+if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name'])) {
+    $bData = $request->beneficiary_info;
+    
+    // ✅ Format Beneficiary NRC String
+    $beneficiaryNrc = null;
+    if (isset($bData['nrcState']) && isset($bData['nrcNumber'])) {
+        $beneficiaryNrc = $bData['nrcState'] . '/' . ($bData['nrcTownship'] ?? '') .
+                          '(' . ($bData['nrcType'] ?? 'N') . ')' . $bData['nrcNumber'];
     }
 
+    $beneficiary = Beneficiary::create([
+        'customer_id'  => $customer->customer_id,
+        'name'         => $bData['name'],
+        'phone'        => $bData['phone'] ?? $customer->phone,
+        'relationship' => $bData['relationship'] ?? 'Self',
+        'nrc'          => $beneficiaryNrc, // Now this won't be null
+    ]);
+    $beneficiaryId = $beneficiary->beneficiary_id;
+}
+        // 7. Calculate Premium
+        $plan = Plan::where('plan_id', $request->plan_id)->firstOrFail();
+        $days = Carbon::parse($request->start_date)->diffInDays(Carbon::parse($request->end_date)) + 1;
+        $totalPremium = $plan->daily_rate * $days;
+
+        // 8. Create Contract (REMOVED 'nrc' column from here)
+        $contract = Contract::create([
+            'contract_id'    => $this->generateContractId(),
+            'customer_id'    => $customer->customer_id,
+            'beneficiary_id' => $beneficiaryId,
+            'plan_id'        => $request->plan_id,
+            'trip_type'      => $request->trip_type ?? 'single',
+            'start_date'     => $request->start_date,
+            'end_date'       => $request->end_date,
+            'destination'    => $request->destination,
+            'vehicle'        => $request->vehicle,
+            'premium_amount' => $totalPremium,
+            'status'         => 'pending',
+            // Note: ticket_image is usually on the contract table, but updated on customer based on your request
+        ]);
+
+        // 9. Save All Declaration Results
+        foreach ($request->results as $row) {
+            DeclarationResult::updateOrCreate(
+                [
+                    'customer_id'    => $customer->customer_id,
+                    'declaration_id' => $row['declaration_id']
+                ],
+                ['check_result' => $row['checked']]
+            );
+        }
+
+        DB::commit();
+        return response()->json([
+            'status' => true,
+            'contract_id' => $contract->contract_id
+        ], 201);
+
+    } catch (Exception $e) {
+        DB::rollBack();
+        Log::error('Apply Error: ' . $e->getMessage());
+        return response()->json([
+            'status'  => false,
+            'message' => 'Submission Fails: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 /**
  * Admin Approves the application
