@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Declaration;
 use Illuminate\Http\Request;
 
+
 class DeclarationController extends Controller
 {
     public function getByPlan($plan_id)
@@ -19,4 +20,4 @@ class DeclarationController extends Controller
         }
         return response()->json($declarations);
     }
-}
+    }
