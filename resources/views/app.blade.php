@@ -14,6 +14,7 @@
         @routes
         @viteReactRefresh
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+        <script src="https://stg.static.mul-pay.jp/ext/js/token.js"></script>
         @inertiaHead
     </head>
     <body class="font-sans antialiased">

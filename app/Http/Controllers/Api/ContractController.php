@@ -51,14 +51,14 @@ class ContractController extends Controller
 $nrcFormatted = $customerData['nrcState'] . '/' . ($customerData['nrcTownship'] ?? '') . 
                 '(' . ($customerData['nrcType'] ?? 'N') . ')' . $customerData['nrcNumber'];
 
-// ၂။ အရင်ဆုံး ဒီလူ ရှိပြီးသားလား (Customer Table) မှာ အရင်ရှာပါ
+
 $existingCustomer = Customer::where('nrc', $nrcFormatted)
     ->where('email', $customerData['email'])
     ->where('phone', $customerData['phone'])
     ->first();
 
 if ($existingCustomer) {
-    // ၃။ ဒီလူ ရှိတယ်ဆိုရင် သူ့ရဲ့ Contract တွေကို ထပ်စစ်ပါ
+    
     $duplicateContract = Contract::where('customer_id', $existingCustomer->customer_id)
         ->where('destination', $request->destination)
         ->where('start_date', $request->start_date)
@@ -77,12 +77,11 @@ if ($existingCustomer) {
 
     DB::beginTransaction();
     try {
-        // ✅ ၁။ Frontend မှ data ကို variable တစ်ခုထဲအရင်ယူပါ
+        
         $customerData = $request->customer_info;
         $imagePath = null;
 
-        // ✅ ၂။ Image Handling (Base64 to Physical File)
-        // Frontend က "tripTicket" (CamelCase) နဲ့ ပို့တာကို သေချာစစ်ပါ
+       
         if (!empty($customerData['tripTicket']) && str_contains($customerData['tripTicket'], 'base64')) {
             $imageData = $customerData['tripTicket'];
             $replace = substr($imageData, 0, strpos($imageData, ',') + 1);
@@ -92,12 +91,12 @@ if ($existingCustomer) {
             $extension = explode('/', explode(':', substr($imageData, 0, strpos($imageData, ';')))[1])[1];
             $imageName = 'ticket_' . time() . '_' . uniqid() . '.' . $extension;
 
-            // public/storage/tickets ထဲသို့ ပုံသိမ်းခြင်း
+           
             Storage::disk('public')->put('tickets/' . $imageName, base64_decode($image));
             $imagePath = 'tickets/' . $imageName;
         }
 
-        // ✅ ၃။ NRC Formatting (Customer အတွက်)
+      
         $nrcFormatted = null;
         if (isset($customerData['nrcState']) && isset($customerData['nrcNumber'])) {
             $nrcFormatted = $customerData['nrcState'] . '/' . 
@@ -106,8 +105,7 @@ if ($existingCustomer) {
                             $customerData['nrcNumber'];
         }
 
-        // ✅ ၄။ Save to Customer Table
-        // Table column နာမည်များ (nrc, trip_ticket) ကို Manual Mapping လုပ်ပေးရပါမည်
+        
         $customer = Customer::create([
             'name'        => $customerData['name'],
             'email'       => $customerData['email'],
@@ -121,7 +119,7 @@ if ($existingCustomer) {
             'ticket_image' => $imagePath, 
         ]);
 
-        // ၃။ Beneficiary Info (Null Check သေချာလုပ်ခြင်း)
+       
         $beneficiaryId = null;
         if ($request->has('beneficiary_info') && is_array($request->beneficiary_info) && !empty($request->beneficiary_info['name'])) {
             $beneficiary = Beneficiary::create([
@@ -153,6 +151,7 @@ if ($existingCustomer) {
                 'destination'    => $request->destination,
                 'vehicle'        => $request->vehicle ?? null,
                 'premium_amount' => $totalPremium,
+                'payment_token'  => $request->payment_token,
                 // 'ticket_image'   => $ticketPath,
                 'status'         => 'pending', 
             ]);
