@@ -16,7 +16,8 @@ class Claim extends Model
        'accident_description',
        'plan_id',
        'benefit_id',
-       'status'
+       'status',
+       'reject_reason'
    ];
    protected $casts = [
        'claim_date' => 'datetime',

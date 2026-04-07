@@ -106,7 +106,10 @@ class ClaimController extends Controller
         $claim = Claim::findOrFail($id);
 
         if ($request->has('status')) {
-            $claim->update(['status' => $request->status]);
+            $claim->update([
+                'status' => $request->status,
+                'reject_reason' => $request->reject_reason
+                ]);
             return redirect()->route('admin.claims.index')->with('success', 'Claim status updated successfully!');
         }
 
@@ -114,6 +117,7 @@ class ClaimController extends Controller
             'claim_amount'  => 'required|numeric|min:0',
             'accident_date' => 'required|date',
             'description'   => 'required|string',
+            'reject_reason' => 'nullable|string',
         ]);
 
         $claim->update([

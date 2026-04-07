@@ -23,8 +23,10 @@ return new class extends Migration
            $table->foreignId('plan_id')->constrained('plans', 'plan_id')->onDelete('cascade');
            $table->foreignId('benefit_id')->constrained('benefits', 'benefit_id')->onDelete('cascade');
            $table->string('status', 50)->default('pending');
+           $table->text('reject_resason')->nullable();
            $table->timestamps();
            $table->softDeletes();
+           
        });
    }
    /**
