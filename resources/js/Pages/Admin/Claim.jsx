@@ -20,11 +20,11 @@ export default function Claim({ claims, auth, filters }) {
     };
 
     const handleEdit = (claim_id) => {
-        router.get(route('admin.claims.edit', claim_id));
+        router.get(route('claims.edit', claim_id));
     };
 
     const handleAddNew = () => {
-        router.get(route('admin.claims.create'));
+        router.get(route('claims.create'));
     };
 
     const columns = [

@@ -74,7 +74,7 @@ class ClaimController extends Controller
             ]);
         });
 
-        return redirect()->route('admin.claims.index')->with('success', 'Claim submitted successfully!');
+        return redirect()->route('claims.index')->with('success', 'Claim submitted successfully!');
     }
 
     public function edit($id)
@@ -82,7 +82,7 @@ class ClaimController extends Controller
         $claim = Claim::with(['contract.customer', 'plan'])->findOrFail($id);
 
         if ($claim->status !== 'pending') {
-            return redirect()->route('admin.claims.index')->with('error', 'Only pending claims can be edited.');
+            return redirect()->route('claims.index')->with('error', 'Only pending claims can be edited.');
         }
 
         return Inertia::render('Admin/ClaimEdit', [
@@ -110,7 +110,7 @@ class ClaimController extends Controller
                 'status' => $request->status,
                 'reject_reason' => $request->reject_reason
                 ]);
-            return redirect()->route('admin.claims.index')->with('success', 'Claim status updated successfully!');
+            return redirect()->route('claims.index')->with('success', 'Claim status updated successfully!');
         }
 
         $validated = $request->validate([
@@ -126,7 +126,7 @@ class ClaimController extends Controller
             'accident_description' => $validated['description'],
         ]);
 
-        return redirect()->route('admin.claims.index')->with('success', 'Claim updated successfully!');
+        return redirect()->route('claims.index')->with('success', 'Claim updated successfully!');
     }
 
     public function getContractDetails($policyNo)
@@ -161,7 +161,7 @@ class ClaimController extends Controller
             'status' => $request->status
         ]);
 
-        return redirect()->route('admin.claims.index')->with('success', 'Status is now ' . $claim->status);
+        return redirect()->route('claims.index')->with('success', 'Status is now ' . $claim->status);
     }
 
     public function destroy($id)
@@ -172,6 +172,6 @@ class ClaimController extends Controller
         
         $claim->delete();
 
-        return redirect()->route('admin.claims.index')->with('success', 'Claim deleted successfully');
+        return redirect()->route('claims.index')->with('success', 'Claim deleted successfully');
     }
 }

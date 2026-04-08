@@ -62,7 +62,7 @@ export default function ClaimCreate({ auth }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!policyError) {
-            post(route('admin.claims.store'));
+            post(route('claims.store'));
         }
     };
 
@@ -178,7 +178,7 @@ export default function ClaimCreate({ auth }) {
                     </div>
 
                     <div className="flex justify-end items-center gap-4 pt-4 border-t border-slate-100">
-                        <Link href={route('admin.claims.index')} className="text-sm font-medium text-slate-600">
+                        <Link href={route('claims.index')} className="text-sm font-medium text-slate-600">
                             Cancel
                         </Link>
                         <button

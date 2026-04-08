@@ -46,7 +46,7 @@ export default function ClaimEdit({ auth, claim }) {
 
     const handleFinalSubmit = () => {
         setShowConfirmModal(false);
-        router.patch(route('admin.claims.status', { id: claim.claim_id }), {
+        router.patch(route('claims.status', { id: claim.claim_id }), {
             status: pendingStatus,
             plan_id: data.plan_id,
             claim_amount: data.claim_amount,
@@ -162,7 +162,7 @@ export default function ClaimEdit({ auth, claim }) {
                     )}
 
                     <div className="flex justify-between items-center pt-6 border-t border-slate-100">
-                        <Link href={route('admin.claims.index')} className="text-sm font-medium text-slate-600 hover:text-slate-800">Back to List</Link>
+                        <Link href={route('claims.index')} className="text-sm font-medium text-slate-600 hover:text-slate-800">Back to List</Link>
                         <div className="flex gap-4">
                             {!showRejectBox && (
                                 <>
