@@ -1,73 +1,28 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\Api\ContractController;
-use Illuminate\Foundation\Application;
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\GmoPaymentController;
 use Inertia\Inertia;
 
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
-Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect('/admin/dashboard');
-    }
-    return Inertia::render('Auth/Login');
-});
+// 1. Move this OUTSIDE the 'auth' middleware to bypass login
+Route::get('/admin/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
 
-
-
-
-// Route::middleware(['auth', 'role:superadmin'])->group(function () {
-//     Route::get('/admin/users', [UserController::class, 'index']);
-// });
-
-Route::middleware(['auth', 'role:superadmin'])->prefix('admin')->group(function () {
-    // List Users
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    
-    // Create User Form
-    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
-    
-    // Store User
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    
-    // Edit User Form 
-    Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-    
-    // Update User
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    
-    // Delete User 
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-});
-
-Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
- 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    // Route::get('/contracts', fn() => Inertia::render('Admin/Contracts'))->name('admin.contracts');
-    // Route::get('/premiums', fn() => Inertia::render('Admin/Premiums'))->name('admin.premiums');
-   
-    
-});
+// 2. Protected Routes (Only for actions like Cancel/Process)
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
+    Route::post('/payments/process', [GmoPaymentController::class, 'process'])->name('payments.process');
+    Route::post('/payments/generate-token', [GmoPaymentController::class, 'generateToken'])->name('payments.token');
+    Route::post('/payments/search', [GmoPaymentController::class, 'search'])->name('payments.search');
+    Route::post('/payments/cancel', [GmoPaymentController::class, 'cancel'])->name('payments.cancel');
+    Route::get('/payments/history', [GmoPaymentController::class, 'history'])->name('payments.history');
 });
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
-  
-});
+// 3. Login Route
+Route::get('/login', function () {
+    return redirect()->route('admin.payments.index');
+})->name('login');
 
-require __DIR__.'/auth.php';
+// 4. Redirect root to the payment page
+Route::get('/', function () {
+    return redirect()->route('admin.payments.index');
+});

@@ -16,4 +16,12 @@ class Payment extends Model
     protected $casts = ['pay_date' => 'datetime'];
 
     public function contract() { return $this->belongsTo(Contract::class, 'contract_id'); }
+
+   public function gmoPayment() {
+    return $this->hasOne(GmoPayment::class);
+}
+    
+
+    
+    
 }

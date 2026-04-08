@@ -1,123 +1,86 @@
 import React, { useState, useMemo } from 'react';
-import { Edit3, Trash2, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit3, Trash2, Filter, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 const DataTable = ({ 
-    columns, 
-    data, 
+    columns = [], 
+    data = [], 
     pagination, 
-    onEdit, 
-    onDelete, 
     renderExtra, 
     title = "Management" 
 }) => {
     const [search, setSearch] = useState('');
 
-    // Filtered data based on search input
+    // Filter Logic: data က array ဖြစ်မှ အလုပ်လုပ်အောင် စစ်ထားပါတယ်
     const filteredData = useMemo(() => {
-        if (!search) return data;
-        return data.filter(row =>
-            columns.some(col =>
-                String(row?.[col.key] ?? '')
-                    .toLowerCase()
-                    .includes(search.toLowerCase())
-            )
+        const safeData = Array.isArray(data) ? data : [];
+        if (!search) return safeData;
+
+        return safeData.filter(row =>
+            columns.some(col => {
+                const cellValue = row[col.key];
+                return String(cellValue ?? '').toLowerCase().includes(search.toLowerCase());
+            })
         );
     }, [data, columns, search]);
 
     const totalPages = pagination?.last_page || 1;
     const currentPage = pagination?.current_page || 1;
 
-    const renderPageNumbers = () => {
-        let pages = [];
-        for (let i = 1; i <= totalPages; i++) {
-            pages.push(
-                <button
-                    key={i}
-                    onClick={() => pagination?.onPageChange?.(i)}
-                    className={`px-3 py-1 rounded-md border text-xs font-medium transition-colors ${
-                        i === currentPage
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-slate-600 hover:bg-blue-50 border-slate-200'
-                    }`}
-                >
-                    {i}
-                </button>
-            );
-        }
-        return pages;
-    };
-
     return (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="bg-blue-600 text-white p-2 rounded-lg shadow-md shadow-blue-100">
+                    <div className="bg-blue-600 text-white p-2 rounded-lg shadow-md">
                         <Filter size={18} />
                     </div>
                     <h2 className="text-lg font-bold text-slate-800">{title}</h2>
                 </div>
-
+                
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    <input
-                        type="text"
-                        placeholder="Search records..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="flex-1 md:w-64 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                    />
-                    
-                    {/* This is where the "Add New" button from UserManagement will appear */}
+                    <div className="relative flex-1 md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search records..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                        />
+                    </div>
                     {renderExtra && <div className="shrink-0">{renderExtra}</div>}
                 </div>
             </div>
 
-            {/* Table Area */}
             <div className="overflow-x-auto rounded-xl border border-slate-100">
                 <table className="w-full text-sm text-left border-collapse">
-                    <thead className="bg-slate-50 text-slate-500 uppercase text-[11px] tracking-wider font-bold">
+                    <thead className="bg-slate-50 text-slate-500 uppercase text-[11px] font-extrabold tracking-wider">
                         <tr>
                             {columns?.map(col => (
-                                <th key={col.key} className="p-4 border-b border-slate-100">
+                                <th key={col.key} className="p-4 border-b border-slate-100 text-center">
                                     {col.label}
                                 </th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="text-slate-600">
-                        {filteredData?.length > 0 ? (
+                        {filteredData.length > 0 ? (
                             filteredData.map((row, i) => (
-                                <tr key={i} className="border-b border-slate-50 hover:bg-blue-50/30 transition-colors">
+                                <tr key={row.id || i} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
                                     {columns?.map(col => (
-                                        <td key={col.key} className="p-4">
-                                            {col.key === 'actions' ? (
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={() => onEdit(row.id)}
-                                                        className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-                                                        title="Edit"
-                                                    >
-                                                        <Edit3 size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => onDelete(row.id)}
-                                                        className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-all"
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                row?.[col.key] ?? '-'
-                                            )}
+                                        <td key={col.key} className="p-4 text-center align-middle">
+                                            {/* Render function ရှိရင် render ကိုသုံးမယ်၊ မရှိရင် data အတိုင်းပြမယ် */}
+                                            {col.render 
+                                                ? col.render(row[col.key], row) 
+                                                : (row[col.key] ?? <span className="text-slate-300">-</span>)
+                                            }
                                         </td>
                                     ))}
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={columns?.length} className="p-10 text-center text-slate-400 italic">
-                                    No records found matching your search.
+                                <td colSpan={columns?.length} className="p-20 text-center">
+                                    <div className="text-slate-300 italic">No records found.</div>
                                 </td>
                             </tr>
                         )}
@@ -125,39 +88,26 @@ const DataTable = ({
                 </table>
             </div>
 
-            {/* Pagination Area */}
-            <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
-                <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
-                    <span>Show</span>
-                    <select
-                        className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer"
-                        value={pagination?.per_page}
-                        onChange={e => pagination?.onLimitChange?.(Number(e.target.value))}
-                    >
-                        {[5, 10, 25, 50].map(v => (
-                            <option key={v} value={v}>{v}</option>
-                        ))}
-                    </select>
-                    <span>entries</span>
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mt-6 px-2">
+                <div className="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+                    Page <span className="text-blue-600">{currentPage}</span> of {totalPages}
                 </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => pagination?.onPageChange?.(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="p-2 border border-slate-200 rounded-md disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => pagination?.onPageChange?.(currentPage - 1)} 
+                        disabled={currentPage === 1} 
+                        className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all shadow-sm"
                     >
-                        <ChevronLeft size={16} />
+                        <ChevronLeft size={16}/>
                     </button>
-
-                    <div className="flex gap-1">{renderPageNumbers()}</div>
-
-                    <button
-                        onClick={() => pagination?.onPageChange?.(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="p-2 border border-slate-200 rounded-md disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                    <button 
+                        onClick={() => pagination?.onPageChange?.(currentPage + 1)} 
+                        disabled={currentPage === totalPages} 
+                        className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all shadow-sm"
                     >
-                        <ChevronRight size={16} />
+                        <ChevronRight size={16}/>
                     </button>
                 </div>
             </div>

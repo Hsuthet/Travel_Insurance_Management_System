@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Project Folder ထဲသို့ အရင်ဝင်ပါ
+cd "/c/Travel_Insurance_Management_System"
+
+echo "--- Starting GMO Batch Process ---"
+
+# Laravel Artisan Command ကို Run ပါ
+# Parameter token နေရာမှာ testing_token လို့ အကြမ်းထည့်ပေးထားပါတယ်
+php artisan contracts:process-payments "testing_token"
+
+echo "--- Process Finished ---"

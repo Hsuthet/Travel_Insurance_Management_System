@@ -16,7 +16,6 @@ class DeclarationController extends Controller
 
         if ($declarations->isEmpty()) {
             return response()->json(['message' => 'No data found'], 404);
-            return response()->json(['message' => 'No data found'], 404);
         }
         return response()->json($declarations);
     }
