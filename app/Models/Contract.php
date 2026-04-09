@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class Contract extends Model
 {
@@ -12,11 +12,15 @@ class Contract extends Model
 
     protected $table = 'contracts'; 
     protected $primaryKey = 'contract_id';
+    
+    // --- CRITICAL FIXES FOR CUSTOM IDs ---
+    public $incrementing = false; 
+    protected $keyType = 'string'; 
 
-    // Fillable ကို တစ်ခုတည်းမှာ အကုန်စုရေးပါ
     protected $fillable = [
+        'contract_id', // Add this if you manually generate the ID
         'policy_no', 
-        'customer_id',      // database မှာ person_id ဆိုရင် ဒါကို person_id ပြောင်းပါ
+        'customer_id', 
         'beneficiary_id', 
         'plan_id', 
         'trip_type', 
@@ -33,39 +37,37 @@ class Contract extends Model
 
     protected $casts = [
         'start_date' => 'datetime', 
-        'end_date' => 'datetime'
+        'end_date' => 'datetime',
+        'premium_amount' => 'decimal:2' // Good for financial accuracy
     ];
 
-    // Policy Number ကို အလိုအလျောက် ထုတ်ပေးရန် (TRV-0000001)
-    protected static function booted()
+    // Accessor for expiration status
+    public function getIsExpiredAttribute() {
+        return now()->gt($this->end_date);
+    }
+
+    // --- RELATIONSHIPS ---
+
+    public function customer()
     {
-        static::creating(function ($contract) {
-            // လက်ရှိ ရှိပြီးသား အကြီးဆုံး ID ကို ယူသည်
-            $lastId = DB::table('contracts')->max('contract_id') ?? 0;
-            $nextId = $lastId + 1;
-
-            // policy_no ကို format လုပ်ပြီး ထည့်သွင်းသည်
-            $contract->policy_no = 'TRV-' . str_pad($nextId, 7, '0', STR_PAD_LEFT);
-        });
+        // Explicitly defining keys is safer for custom ID setups
+        return $this->belongsTo(Customer::class, 'customer_id', 'customer_id');
     }
 
-    // Relationships
-    // foreign key နေရာမှာ 'customer_id' လား 'person_id' လား သေချာစစ်ဆေးပါ
-    public function customer() { 
-        return $this->belongsTo(Customer::class, 'customer_id'); 
+    public function plan() 
+    { 
+        return $this->belongsTo(Plan::class, 'plan_id', 'plan_id'); 
     }
-    
-    public function plan() { 
-        return $this->belongsTo(Plan::class, 'plan_id'); 
-    }
-    
-    public function beneficiary() { 
-        return $this->belongsTo(Beneficiary::class, 'beneficiary_id'); 
+
+    public function beneficiary() 
+    { 
+        return $this->belongsTo(Beneficiary::class, 'beneficiary_id', 'beneficiary_id'); 
     }
     
     public function payments() { 
         return $this->hasMany(Payment::class, 'contract_id'); 
     }
 
-    
+    public function claims(){ return $this->hasMany(Claim::class, 'contract_id', 'contract_id');}
+
 }

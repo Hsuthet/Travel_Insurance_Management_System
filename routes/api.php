@@ -5,15 +5,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PaymentController;
 
 
-use App\Http\Controllers\Api\{
-    PlanController,
-    CustomerController,
-    ContractController,
-    ClaimController,
-    BenefitController,
-    DeclarationController,
-    GmoPaymentController
-};
+use App\Http\Controllers\Api\PlanController;
+use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\ContractController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ClaimController;
+use App\Http\Controllers\Api\BenefitController;
+use App\Http\Controllers\Api\DeclarationController;
 
 Route::get('/test', function () {
     return response()->json(['message' => 'API OK']);
@@ -49,18 +47,12 @@ Route::get('/plans/{plan_id}/declarations', [DeclarationController::class, 'getB
 Route::post('/declaration-results', [DeclarationController::class, 'storeResults']);
 
 //Payment
-/* 
-// --- Payments ---
- Route::prefix('payments')->group(function () {
-    
-    // ၁။ Table Data ကြည့်ရန် (Payment.jsx အတွက် အရေးကြီးဆုံး)
-    // GET method ကို သုံးရပါမယ်၊ Method နာမည်က index ဖြစ်ရပါမယ်
-    Route::get('/', [PaymentController::class, 'index'])->name('admin.payments.index');
 
-    // ၂။ ငွေပေးချေမှု လုပ်ဆောင်ရန် (store အစား Controller ထဲက process ကို သုံးပါ)
-    Route::post('/process', [PaymentController::class, 'process'])->name('payments.process');
+// Route::post('/payment/success/{id}', [PaymentController::class, 'store']);
 
-    // ၃။ Card Token ထုတ်ရန်
-    Route::post('/generate-token', [PaymentController::class, 'generateToken'])->name('payments.token');
-}); */
-
+// Admin Contract Management
+Route::prefix('admin/contracts')->group(function () {
+    Route::patch('/{id}/approve', [ContractController::class, 'approve']);
+    Route::patch('/{id}/reject', [ContractController::class, 'reject']);
+    Route::patch('/{id}/cancel', [ContractController::class, 'cancel']);
+});
