@@ -5,7 +5,7 @@ import { Head, router } from '@inertiajs/react';
 import { List, Calendar, ChevronDown } from 'lucide-react';
 
 export default function ContractList({ contracts, auth, filters }) {
-    
+    console.log("Contracts Data:", contracts);
     // 1. Local States for filtering
     const [status, setStatus] = useState(filters.status || 'Status');
     const [startDate, setStartDate] = useState(filters.startDate || '');
@@ -17,24 +17,25 @@ export default function ContractList({ contracts, auth, filters }) {
     const planNames = { 1: 'Basic', 2: 'Standard', 3: 'Premium' };
 
     // 2. Status Badge Renderer
-    const renderStatus = (val) => {
-        const key = val ? val.toLowerCase().replace('_', ' ') : 'default';
-        const styles = {
-            'active':   'bg-emerald-100 text-emerald-700 border-emerald-200',
-            'expire':   'bg-rose-100 text-rose-700 border-rose-200',
-            'cancel':   'bg-amber-100 text-amber-700 border-amber-200',
-            'pending':  'bg-orange-100 text-orange-700 border-orange-200',
-            'wait pay': 'bg-blue-100 text-blue-700 border-blue-200',
-            'rejected': 'bg-purple-100 text-purple-700 border-purple-200',
-        };
-
-        return (
-            <span className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-wider ${styles[key] || 'bg-slate-100 text-slate-600'}`}>
-                {key}
-            </span>
-        );
+const renderStatus = (val) => {
+    // Ensure val is a string and handle the underscore
+    const key = val ? String(val).toLowerCase().replace('_', ' ') : 'default';
+    
+    const styles = {
+        'active':   'bg-emerald-100 text-emerald-700 border-emerald-200',
+        'expire':   'bg-rose-100 text-rose-700 border-rose-200',
+        'cancel':   'bg-amber-100 text-amber-700 border-amber-200',
+        'pending':  'bg-orange-100 text-orange-700 border-orange-200',
+        'wait pay': 'bg-blue-100 text-blue-700 border-blue-200', 
+        'rejected': 'bg-purple-100 text-purple-700 border-purple-200',
     };
 
+    return (
+        <span className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-wider ${styles[key] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+            {key}
+        </span>
+    );
+};
     // 3. Reset Function
     const resetFilters = () => {
         setStatus('Status');
@@ -74,53 +75,66 @@ export default function ContractList({ contracts, auth, filters }) {
 }, [status, startDate, endDate]);
 
     // 4. Columns Definition
-    const columns = [
-        { 
+   const columns = [
+    { 
         label: 'No', 
         key: 'id', 
-        render: (_, __, index) => {
-            // Calculate continuous numbering across pages
-            // pagination.current_page starts at 1, per_page is usually 10
+        // In your DataTable, the first arg is the whole row
+        render: (row, index) => {
             return (contracts.current_page - 1) * contracts.per_page + (index + 1);
         }
     },
-        { label: 'Policy No', key: 'policy_no', render: (val) => val || '-' },
-        { 
-            label: 'Customer', 
-            key: 'customer', 
-            render: (c) => <span className="font-bold text-slate-700">{c?.name || 'N/A'}</span> 
-        },
-        { label: 'Plan', key: 'plan_id', render: (id) => planNames[id] || 'Unknown' },
-        { 
-            label: 'Applied Date', 
-            key: 'created_at', 
-            render: (date) => date ? new Date(date).toLocaleDateString('ja-JP') : '-' 
-        },
-        { 
-            label: 'Premium', 
-            key: 'premium_amount',
-            render: (amt) => <span className="font-bold">{Number(amt).toLocaleString()}</span>
-        },
-        { 
-            label: 'Status', 
-            key: 'status',
-            render: (val) => <div className="flex justify-center">{renderStatus(val)}</div>
-        },
-        { 
-            label: 'Action', 
-            key: 'actions', 
-            render: (_, row) => (
-                <div className="flex justify-center">
-                    <button 
-                        onClick={() => router.get(route('admin.contracts.show', row.contract_id))}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-1.5 rounded-xl text-xs font-black shadow-sm transition-all uppercase"
-                    >
-                        View
-                    </button>
-                </div>
-            )
-        }
-    ];
+    { 
+        label: 'Policy No', 
+        key: 'policy_no', 
+        render: (row) => row.policy_no || '-' 
+    },
+    { 
+        label: 'Customer', 
+        key: 'customer', 
+        // This was the crasher: row.customer was likely undefined because 
+        // you might have been expecting the first arg to be the customer object
+        render: (row) => (
+            <span className="font-bold text-slate-700">
+                {row.customer?.name || 'N/A'}
+            </span>
+        ) 
+    },
+    { 
+        label: 'Plan', 
+        key: 'plan_id', 
+        render: (row) => planNames[row.plan_id] || 'Unknown' 
+    },
+    { 
+        label: 'Applied Date', 
+        key: 'created_at', 
+        render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString('ja-JP') : '-' 
+    },
+    { 
+        label: 'Premium', 
+        key: 'premium_amount',
+        render: (row) => <span className="font-bold">{Number(row.premium_amount).toLocaleString()}</span>
+    },
+    { 
+        label: 'Status', 
+        key: 'status',
+        render: (row) => <div className="flex justify-center">{renderStatus(row.status)}</div>
+    },
+    { 
+        label: 'Action', 
+        key: 'actions', 
+        render: (row) => (
+            <div className="flex justify-center">
+                <button 
+                    onClick={() => router.get(route('admin.contracts.show', row.contract_id))}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-1.5 rounded-xl text-xs font-black shadow-sm transition-all uppercase"
+                >
+                    View
+                </button>
+            </div>
+        )
+    }
+];
 
     return (
         <AdminLayout auth={auth}>

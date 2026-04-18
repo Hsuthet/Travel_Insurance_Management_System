@@ -28,9 +28,9 @@ export default function Reports({ auth, reports, pagination }) {
 
     const renderStatus = (status) => {
         const styles = {
-            Active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-            Expire: 'bg-rose-100 text-rose-700 border-rose-200',
-            Cancel: 'bg-amber-100 text-amber-700 border-amber-200',
+            active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+            expire: 'bg-rose-100 text-rose-700 border-rose-200',
+            cancel: 'bg-amber-100 text-amber-700 border-amber-200',
         };
         return (
             <span className={`px-3 py-1 rounded-full text-xs font-bold border ${styles[status] || 'bg-slate-100 text-slate-600'}`}>
@@ -206,9 +206,9 @@ const downloadExcel = async () => {
                                         className="appearance-none bg-[#E2E8F0] border-none rounded-xl px-6 py-2.5 text-sm font-bold text-slate-500 pr-10 cursor-pointer focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="Status">Status</option> 
-                                        <option value="Active">Active</option>
-                                        <option value="Expire">Expire</option>
-                                        <option value="Cancel">Cancel</option>
+                                        <option value="active">Active</option>
+                                        <option value="expire">Expire</option>
+                                        <option value="cancel">Cancel</option>
                                     </select>
                                 </div>
 
