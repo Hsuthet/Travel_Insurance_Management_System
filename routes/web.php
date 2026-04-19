@@ -43,7 +43,7 @@ Route::middleware([''])->prefix('admin')->name('admin.')->group(function () {
     Route::put('/claims/{id}', [ClaimController::class, 'update'])->name('claims.update');
     Route::get('/get-contract/{policy_no}', [ClaimController::class, 'getContractDetails'])->name('get.contract');
     Route::delete('/claims/{id}', [ClaimController::class, 'destroy'])->name('claims.destroy');
-    Route::patch('/claims/{id}/status', [ClaimController::class, 'updateStatus'])->name('claims.status');
+    Route::patch('/claims/{id}/claim_status', [ClaimController::class, 'updateclaim_status'])->name('claims.claim_status');
 
     // Contracts
     Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');

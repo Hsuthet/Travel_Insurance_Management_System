@@ -49,7 +49,7 @@ class ClaimController extends Controller
         'accident_date' => $request->accident_date,
         'accident_description' => $request->accident_description,
         'benefit_id' => $request->benefit_id,
-        'status' => 'pending'
+        'claim_status' => 'pending'
     ]);
 
     return response()->json([
