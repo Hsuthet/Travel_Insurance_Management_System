@@ -6,6 +6,9 @@ export default function ClaimEdit({ auth, claim }) {
     const [showRejectBox, setShowRejectBox] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [pendingclaim_status, setPendingclaim_status] = useState(null);
+    const [rejectError, setRejectError] = useState('');
+
+    const isReadOnly = claim.claim_status !== 'pending';
 
     const planDetails = {
         '1': { name: 'Basic', amount: 25000, coverage: 'Medical Only' },
@@ -23,10 +26,11 @@ export default function ClaimEdit({ auth, claim }) {
         claim_amount: claim.claim_amount || '',
         description: claim.accident_description || '',
         claim_status: claim.claim_status || 'pending',
-        reject_reason: '',
+        reject_reason: claim.reject_reason || '',
     });
 
     const handlePlanChange = (e) => {
+        if (isReadOnly) return;
         const selectedId = e.target.value;
         setData((prev) => ({
             ...prev,
@@ -36,10 +40,11 @@ export default function ClaimEdit({ auth, claim }) {
     };
 
     const triggerConfirm = (claim_status) => {
-        if (claim_status === 'rejected' && !data.reject_reason) {
-            alert('Please provide a reason for rejection.');
+        if (claim_status === 'rejected' && !data.reject_reason.trim()) {
+            setRejectError('Please provide a reason for rejection.');
             return;
         }
+        setRejectError('');
         setPendingclaim_status(claim_status);
         setShowConfirmModal(true);
     };
@@ -56,13 +61,16 @@ export default function ClaimEdit({ auth, claim }) {
 
     return (
         <AdminLayout auth={auth}>
-            <Head title="Edit Claim" />
-
+            <Head title={isReadOnly ? "View Claim" : "Edit Claim"} />
             <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200 mt-10 relative">
                 <div className="border-b border-slate-100 pb-4 mb-6 flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Edit & Review Claim</h1>
-                        <p className="text-slate-500 font-medium italic">Current claim_status: {claim.claim_status}</p>
+                        <h1 className="text-2xl font-bold text-slate-800">
+                            {isReadOnly ? 'View Claim Details' : 'Edit & Review Claim'}
+                        </h1>
+                        <p className="text-slate-500 font-medium italic">
+                            Current claim_status: <span className="font-bold uppercase text-blue-600">{claim.claim_status}</span>
+                        </p>
                     </div>
                 </div>
 
@@ -80,13 +88,14 @@ export default function ClaimEdit({ auth, claim }) {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">Select Insurance Plan</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Insurance Plan</label>
                             <select
-                                className="w-full border-slate-300 rounded-lg focus:ring-indigo-500"
+                                className={`w-full rounded-lg ${isReadOnly ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-300 focus:ring-indigo-500'}`}
                                 value={data.plan_id}
                                 onChange={handlePlanChange}
+                                disabled={isReadOnly}
                             >
-                                <option value="">-- Select a Plan --</option>
+                                <option value="">-- Plan --</option>
                                 <option value="1">Basic </option>
                                 <option value="2">Standard </option>
                                 <option value="3">Premium </option>
@@ -117,9 +126,10 @@ export default function ClaimEdit({ auth, claim }) {
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Date of Accident</label>
                             <input
                                 type="date"
-                                className={`w-full rounded-lg ${errors.accident_date ? 'border-red-500' : 'border-slate-300'}`}
+                                className={`w-full rounded-lg ${isReadOnly ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : errors.accident_date ? 'border-red-500' : 'border-slate-300'}`}
                                 value={data.accident_date}
-                                onChange={e => setData('accident_date', e.target.value)}
+                                onChange={e => !isReadOnly && setData('accident_date', e.target.value)}
+                                readOnly={isReadOnly}
                             />
                         </div>
                         <div>
@@ -132,59 +142,82 @@ export default function ClaimEdit({ auth, claim }) {
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Claim Description</label>
                         <textarea
                             rows="3"
-                            className={`w-full rounded-lg ${errors.description ? 'border-red-500' : 'border-slate-300'}`}
+                            className={`w-full rounded-lg ${isReadOnly ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : errors.description ? 'border-red-500' : 'border-slate-300'}`}
                             value={data.description}
-                            onChange={e => setData('description', e.target.value)}
+                            onChange={e => !isReadOnly && setData('description', e.target.value)}
+                            readOnly={isReadOnly}
                         ></textarea>
                     </div>
 
-                    {showRejectBox && (
+                    {(showRejectBox || (claim.claim_status === 'rejected' && data.reject_reason)) && (
                         <div className="bg-red-50 p-4 rounded-lg border border-red-100 animate-in fade-in slide-in-from-top-2">
-                            <label className="block text-sm font-bold text-red-700 mb-2">Rejection Reason *</label>
+                            <label className="block text-sm font-bold text-red-700 mb-2">Rejection Reason</label>
                             <textarea
                                 rows="3"
-                                className="w-full border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500"
+                                className={`w-full rounded-lg ${isReadOnly ? 'bg-white border-red-100 text-red-800' : 'border-red-200 focus:ring-red-500'} ${rejectError ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                 placeholder="Explain why this claim is being rejected..."
                                 value={data.reject_reason}
-                                onChange={e => setData('reject_reason', e.target.value)}
+                                onChange={e => {
+                                    setData('reject_reason', e.target.value);
+                                    if (rejectError) setRejectError('');
+                                }}
+                                readOnly={isReadOnly}
                             ></textarea>
-                            <div className="mt-2 flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => triggerConfirm('rejected')}
-                                    className="bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-red-700"
-                                >
-                                    Confirm Rejection
-                                </button>
-                                <button type="button" onClick={() => setShowRejectBox(false)} className="text-slate-600 px-4 py-1.5 text-sm">Cancel</button>
-                            </div>
+                            {rejectError && (
+                                <p className="mt-1 text-xs font-bold text-red-600 animate-pulse">
+                                    ⚠️ {rejectError}
+                                </p>
+                            )}
+                            {!isReadOnly && showRejectBox && (
+                                <div className="mt-3 flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => triggerConfirm('rejected')}
+                                        className="bg-red-600 text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-red-700 transition-colors"
+                                    >
+                                        Confirm Rejection
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowRejectBox(false);
+                                            setRejectError('');
+                                        }}
+                                        className="text-slate-600 px-4 py-1.5 text-sm hover:underline"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     <div className="flex justify-between items-center pt-6 border-t border-slate-100">
                         <Link href={route('claims.index')} className="text-sm font-medium text-slate-600 hover:text-slate-800">Back to List</Link>
-                        <div className="flex gap-4">
-                            {!showRejectBox && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowRejectBox(true)}
-                                        disabled={processing}
-                                        className="px-6 py-2.5 rounded-lg font-bold text-red-600 border border-red-200 hover:bg-red-50"
-                                    >
-                                        Reject Claim
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => triggerConfirm('claimed')}
-                                        disabled={processing}
-                                        className="bg-green-600 text-white px-8 py-2.5 rounded-lg font-bold hover:bg-green-700 shadow-lg"
-                                    >
-                                        Approve Claim
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                        {!isReadOnly && (
+                            <div className="flex gap-4">
+                                {!showRejectBox && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowRejectBox(true)}
+                                            disabled={processing}
+                                            className="px-6 py-2.5 rounded-lg font-bold text-red-600 border border-red-200 hover:bg-red-50"
+                                        >
+                                            Reject Claim
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => triggerConfirm('claimed')}
+                                            disabled={processing}
+                                            className="bg-green-600 text-white px-8 py-2.5 rounded-lg font-bold hover:bg-green-700 shadow-lg"
+                                        >
+                                            Approve Claim
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </form>
 

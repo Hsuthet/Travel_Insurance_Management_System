@@ -64,10 +64,6 @@ class ClaimController extends Controller
     {
         $claim = Claim::with(['contract.customer', 'plan'])->findOrFail($id);
 
-        if ($claim->claim_status !== 'pending') {
-            return redirect()->route('claims.index')->with('error', 'Only pending claims can be edited.');
-        }
-
         return Inertia::render('Admin/ClaimEdit', [
             'claim' => [
                 'claim_id'             => $claim->claim_id,
@@ -79,7 +75,8 @@ class ClaimController extends Controller
                 'accident_date'        => $claim->accident_date,
                 'claim_amount'         => $claim->claim_amount,
                 'accident_description' => $claim->accident_description,
-                'claim_status'         => $claim->claim_status
+                'claim_status'         => $claim->claim_status,
+                'reject_reason'        => $claim->reject_reason
             ]
         ]);
     }
@@ -119,14 +116,21 @@ class ClaimController extends Controller
                 ->where('claim_status', '!=', 'rejected')
                 ->exists();
 
+            $activeStatuses = ['active', 'approved', 'wait pay', 'pending'];
+            $dbStatus = strtolower(str_replace('_', ' ', $contract->status));
+            $isReallyActive = in_array($dbStatus, $activeStatuses) && !$contract->is_expired;
+
             return response()->json([
-                'success'    => true,
-                'is_claimed' => $isClaimed,
-                'full_name'  => $contract->customer->name,
-                'email'      => $contract->customer->email,
-                'phone'      => $contract->customer->phone,
-                'plan_name'  => optional($contract->plan)->plan_name,
-                'plan_id'    => $contract->plan_id,
+                'success'         => true,
+                'is_claimed'      => $isClaimed,
+                'status'          => $dbStatus,
+                'is_expired'      => (bool)$contract->is_expired,
+                'is_really_active' => $isReallyActive,
+                'full_name'       => $contract->customer->name,
+                'email'           => $contract->customer->email,
+                'phone'           => $contract->customer->phone,
+                'plan_name'       => optional($contract->plan)->plan_name,
+                'plan_id'         => $contract->plan_id,
             ]);
         }
 

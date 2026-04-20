@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import DataTable from '@/Components/Admin/DataTable';
-import { Head, router } from '@inertiajs/react';
-import { PlusCircle, ShieldCheck, Edit2 } from 'lucide-react';
+import { Head, router, Link } from '@inertiajs/react';
+import { PlusCircle, ShieldCheck } from 'lucide-react';
 
 export default function Claim({ claims, auth, filters }) {
     const [localFilters, setLocalFilters] = useState({
@@ -17,10 +17,6 @@ export default function Claim({ claims, auth, filters }) {
             preserveScroll: true,
             replace: true
         });
-    };
-
-    const handleEdit = (claim_id) => {
-        router.get(route('claims.edit', claim_id));
     };
 
     const handleAddNew = () => {
@@ -70,18 +66,13 @@ export default function Claim({ claims, auth, filters }) {
             label: 'Actions',
             key: 'actions',
             render: (row) => (
-                <div className="flex items-center gap-2">
-                    {row.claim_status === 'pending' ? (
-                        <button
-                            onClick={() => handleEdit(row.claim_id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100 font-medium text-sm"
-                        >
-                            <Edit2 size={16} />
-                            Edit
-                        </button>
-                    ) : (
-                        <span className="text-slate-400 text-xs italic px-3"></span>
-                    )}
+                <div className="flex justify-center">
+                    <Link
+                        href={route('claims.edit', row.claim_id)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-1.5 rounded-xl text-xs font-black shadow-sm transition-all uppercase tracking-wider inline-block"
+                    >
+                        View
+                    </Link>
                 </div>
             )
         },
@@ -117,4 +108,3 @@ export default function Claim({ claims, auth, filters }) {
         </AdminLayout>
     );
 }
- 
