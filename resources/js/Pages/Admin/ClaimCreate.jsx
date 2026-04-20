@@ -33,6 +33,13 @@ export default function ClaimCreate({ auth }) {
                 if (response.data.success) {
                     const res = response.data;
 
+                    if (!res.is_really_active) {
+                        let statusMsg = res.is_expired ? "Expired" : (res.status || "Inactive");
+                        setPolicyError(`This policy is ${statusMsg.toUpperCase()}. Claims can only be created for ACTIVE policies.`);
+                        reset('full_name', 'email', 'phone', 'plan_id', 'claim_amount');
+                        return;
+                    }
+
                     if (res.is_claimed) {
                         setPolicyError("This policy already has an active or pending claim.");
                         reset('full_name', 'email', 'phone', 'plan_id', 'claim_amount');
@@ -54,13 +61,14 @@ export default function ClaimCreate({ auth }) {
                 }
             } catch (error) {
                 console.error("Error fetching contract details:", error);
+                setPolicyError("Error connecting to server.");
             }
         }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!policyError) {
+        if (!policyError && data.policy_no) {
             post(route('claims.store'));
         }
     };
@@ -71,7 +79,7 @@ export default function ClaimCreate({ auth }) {
             <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200 mt-10">
                 <div className="border-b border-slate-100 pb-4 mb-6">
                     <h1 className="text-2xl font-bold text-slate-800">Travel Insurance Claim Request Form</h1>
-                    <p className="text-sm text-slate-500"></p>
+                    <p className="text-sm text-slate-500">Register a new claim for an active policy.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -121,6 +129,7 @@ export default function ClaimCreate({ auth }) {
                                 <option value="3">Premium</option>
                             </select>
                         </div>
+
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Claimed Amount (MMK)</label>
                             <input
@@ -179,7 +188,7 @@ export default function ClaimCreate({ auth }) {
                         </Link>
                         <button
                             type="submit"
-                            disabled={processing || !!policyError}
+                            disabled={processing || !!policyError || !data.policy_no}
                             className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-bold hover:bg-blue-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {processing ? 'Registering...' : 'Register Claim'}
