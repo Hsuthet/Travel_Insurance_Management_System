@@ -25,6 +25,8 @@
     "dependencies": {
         "exceljs": "^4.4.0",
         "file-saver": "^2.0.5",
-        "lucide-react": "^1.6.0"
+        "lucide-react": "^1.6.0",
+        "rechart": "^0.0.1",
+        "recharts": "^3.8.1"
     }
 }
