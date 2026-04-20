@@ -180,19 +180,11 @@ class ContractController extends Controller
         }
 
 // 6. Beneficiary Logic
-// 6. Beneficiary Logic
 $beneficiaryId = null;
 if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name'])) {
     $bData = $request->beneficiary_info;
 
     $beneficiaryNrc = null;
-
-    // Check if frontend sent the ALREADY formatted string
-    if (isset($bData['nrc']) && !empty($bData['nrc'])) {
-        $beneficiaryNrc = $bData['nrc'];
-    } 
-    // Fallback: If frontend sent raw parts (nrcState, nrcNumber, etc.)
-    elseif (isset($bData['nrcState']) && isset($bData['nrcNumber'])) {
 
     // Check if frontend sent the ALREADY formatted string
     if (isset($bData['nrc']) && !empty($bData['nrc'])) {
@@ -209,7 +201,6 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
         'name'         => $bData['name'],
         'phone'        => $bData['phone'] ?? $customer->phone,
         'relationship' => $bData['relationship'] ?? 'Self',
-        'nrc'          => $beneficiaryNrc, 
         'nrc'          => $beneficiaryNrc, 
     ]);
     $beneficiaryId = $beneficiary->beneficiary_id;
@@ -235,7 +226,6 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
             'status'         => 'pending',
 
         ]);
-}
 
         // 9. Save All Declaration Results
         foreach ($request->results as $row) {
@@ -254,7 +244,12 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
             'contract_id' => $contract->contract_id
         ], 201);
 
-    } catch (Exception $e) {
+    
+    
+    
+    
+    
+        } catch (Exception $e) {
         DB::rollBack();
         Log::error('Apply Error: ' . $e->getMessage());
         return response()->json([
@@ -264,7 +259,9 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
     }
 }
 
-
+/**
+* Admin Approves the application
+*/
 public function approve($id)
 {
     $contract = Contract::findOrFail($id);
@@ -337,6 +334,12 @@ public function show($id)
 
 public function updateStatus(Request $request, $id) {
     $contract = Contract::findOrFail($id);
+
+    // Prevent moving to 'approved' if the date has already passed
+    if ($request->status === 'approved' && $contract->is_expired) {
+        return back()->with('error', 'Cannot approve an expired contract.');
+    }
+
     $contract->status = $request->status;
     $contract->save();
 
