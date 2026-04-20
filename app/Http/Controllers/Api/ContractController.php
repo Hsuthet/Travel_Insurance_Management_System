@@ -244,7 +244,12 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
             'contract_id' => $contract->contract_id
         ], 201);
 
-    } catch (Exception $e) {
+    
+    
+    
+    
+    
+        } catch (Exception $e) {
         DB::rollBack();
         Log::error('Apply Error: ' . $e->getMessage());
         return response()->json([
