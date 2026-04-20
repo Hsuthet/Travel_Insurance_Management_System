@@ -4,7 +4,6 @@ import { Head, useForm, Link } from '@inertiajs/react';
 import axios from 'axios';
 
 export default function ClaimCreate({ auth }) {
-    // Custom error state for policy validation logic
     const [policyError, setPolicyError] = useState(null);
 
     const planDetails = {
@@ -26,7 +25,7 @@ export default function ClaimCreate({ auth }) {
 
     const handlePolicyBlur = async (e) => {
         const policyNo = e.target.value;
-        setPolicyError(null); // Clear previous error
+        setPolicyError(null);
 
         if (policyNo.length >= 5) {
             try {
@@ -76,7 +75,6 @@ export default function ClaimCreate({ auth }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Policy Number */}
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Policy Number</label>
                         <input
@@ -98,7 +96,6 @@ export default function ClaimCreate({ auth }) {
                         {errors.policy_no && <div className="text-red-600 text-xs mt-1 font-medium">{errors.policy_no}</div>}
                     </div>
 
-                    {/* Customer Name */}
                     <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Customer Full Name</label>
                         <input
@@ -110,7 +107,6 @@ export default function ClaimCreate({ auth }) {
                         />
                     </div>
 
-                    {/* Plan and Amount */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Insurance Plan</label>

@@ -6,7 +6,7 @@ import { PlusCircle, ShieldCheck, Edit2 } from 'lucide-react';
 
 export default function Claim({ claims, auth, filters }) {
     const [localFilters, setLocalFilters] = useState({
-        status: filters?.status || '',
+        claim_status: filters?.claim_status || '',
         perPage: filters?.perPage || 5
     });
 
@@ -51,17 +51,17 @@ export default function Claim({ claims, auth, filters }) {
         },
         { label: 'Claimed Amount', key: 'claim_amount' },
         {
-            label: 'Status',
-            key: 'status',
+            label: 'Claim Status',
+            key: 'claim_status',
             render: (row) => {
-                const statusStyles = {
+                const claim_statusStyles = {
                     pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
                     claimed: 'bg-green-100 text-green-700 border-green-200',
                     rejected: 'bg-red-100 text-red-700 border-red-200'
                 };
                 return (
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusStyles[row.status] || 'bg-gray-100 text-gray-600'}`}>
-                        {row.status}
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${claim_statusStyles[row.claim_status] || 'bg-gray-100 text-gray-600'}`}>
+                        {row.claim_status}
                     </span>
                 );
             }
@@ -71,7 +71,7 @@ export default function Claim({ claims, auth, filters }) {
             key: 'actions',
             render: (row) => (
                 <div className="flex items-center gap-2">
-                    {row.status === 'pending' ? (
+                    {row.claim_status === 'pending' ? (
                         <button
                             onClick={() => handleEdit(row.claim_id)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100 font-medium text-sm"
@@ -117,3 +117,4 @@ export default function Claim({ claims, auth, filters }) {
         </AdminLayout>
     );
 }
+ 

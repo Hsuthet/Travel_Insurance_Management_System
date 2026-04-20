@@ -20,15 +20,20 @@ class ContractController extends Controller
 {
     public function index(Request $request)
 {
-    // 1. Start the query with relationships
     $query = Contract::with(['customer', 'plan']);
 
-    // 2. Filter by status
+    // 1. Handle Status Filter (including the 'expired' logic)
     if ($request->filled('status') && $request->status !== 'Status') {
-        $query->where('status', $request->status);
+        if ($request->status === 'expired') {
+            // Expired = Approved but today is past the end_date
+            $query->where('status', 'approved')
+                  ->whereDate('end_date', '<', now());
+        } else {
+            $query->where('status', $request->status);
+        }
     }
 
-    // 3. Date Filters
+    // 2. Date Filters (Existing)
     if ($request->filled('startDate')) {
         $query->whereDate('created_at', '>=', $request->startDate);
     }
@@ -36,12 +41,11 @@ class ContractController extends Controller
         $query->whereDate('created_at', '<=', $request->endDate);
     }
 
-    // 4. Get results
     $contracts = $query->latest()
         ->paginate(10)
         ->withQueryString();
 
-    //  CHECK FOR POSTMAN / API REQUESTS
+    // Check for API requests
     if ($request->wantsJson() || $request->is('api/*')) {
         return response()->json([
             'status' => true,
@@ -49,12 +53,13 @@ class ContractController extends Controller
         ]);
     }
 
-    // Otherwise, return for the React/Inertia frontend
     return Inertia::render('Admin/ContractList', [
         'contracts' => $contracts,
+        // Send back all filters so the UI stays in sync
         'filters' => $request->only(['status', 'startDate', 'endDate']),
     ]);
 }
+
     public function apply(Request $request)
 {
     // 1. Initial Validation
@@ -322,6 +327,12 @@ public function show($id)
 
 public function updateStatus(Request $request, $id) {
     $contract = Contract::findOrFail($id);
+
+    // Prevent moving to 'approved' if the date has already passed
+    if ($request->status === 'approved' && $contract->is_expired) {
+        return back()->with('error', 'Cannot approve an expired contract.');
+    }
+
     $contract->status = $request->status;
     $contract->save();
 
