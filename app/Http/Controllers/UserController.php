@@ -12,20 +12,30 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
-    {
-        // 1. Get users from the database (paginated)
-        $users = User::paginate(10);
+  public function index(Request $request)
+{
+    $users = User::query()
+        // 1. Filter by Role (matches your React 'role' state)
+        ->when($request->role && $request->role !== 'role', function ($query) use ($request) {
+            $query->where('role', $request->role);
+        })
+        // 2. Filter by Date Range
+        ->when($request->startDate, function ($query, $startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        })
+        ->when($request->endDate, function ($query, $endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        })
+        // 3. Finalize Query
+        ->latest()
+        ->paginate($request->perPage ?? 10)
+        ->withQueryString(); // Keeps filters active when clicking page numbers
 
-        // 2. Tell Inertia to show the 'UserManagement' React page
-        return Inertia::render('Admin/UserManagement', [
-            'users' => $users,
-            'filters' => [
-                'status' => $request->status ?? '',
-                'perPage' => $request->perPage ?? 10
-            ],
-        ]);
-    }
+    return Inertia::render('Admin/UserManagement', [
+        'users' => $users,
+        'filters' => $request->only(['role', 'startDate', 'endDate', 'perPage']),
+    ]);
+}
 
     public function create()
     {
@@ -38,7 +48,7 @@ class UserController extends Controller
     $request->validate([
         'name'     => 'required|string|max:255',
         'email'    => 'required|email|unique:users,email',
-        'role'     => 'required|string|in:admin,superadmin', // Only these two
+        'role'     => 'required|string|in:admin,superadmin', 
         'password' => 'required|confirmed|min:8',
     ]);
 
@@ -51,7 +61,7 @@ class UserController extends Controller
     ]);
 
     // 3. Redirect back to the list with a success message
-    return redirect()->route('users.index')->with('message', 'User created successfully!');
+    return redirect()->route('admin.users.index')->with('message', 'User created successfully!');
 }
 
    public function edit(User $user)
@@ -86,7 +96,7 @@ public function update(Request $request, User $user)
     $user->update($validated);
 
     // 4. Redirect
-    return redirect()->route('users.index')
+    return redirect()->route('admin.users.index')
         ->with('message', 'User account updated successfully!');
 }
 public function destroy(User $user)
@@ -98,6 +108,6 @@ public function destroy(User $user)
 
     $user->delete();
 
-    return redirect()->route('users.index')->with('message', 'User deleted successfully');
+    return redirect()->route('admin.users.index')->with('message', 'User deleted successfully');
 }
 }

@@ -173,15 +173,19 @@ class ContractController extends Controller
             $customer->update(['ticket_image' => $imagePath]);
         }
 
-        // 6. Beneficiary
-        // 6. Beneficiary Logic
+// 6. Beneficiary Logic
 $beneficiaryId = null;
 if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name'])) {
     $bData = $request->beneficiary_info;
     
-    // ✅ Format Beneficiary NRC String
     $beneficiaryNrc = null;
-    if (isset($bData['nrcState']) && isset($bData['nrcNumber'])) {
+
+    // Check if frontend sent the ALREADY formatted string
+    if (isset($bData['nrc']) && !empty($bData['nrc'])) {
+        $beneficiaryNrc = $bData['nrc'];
+    } 
+    // Fallback: If frontend sent raw parts (nrcState, nrcNumber, etc.)
+    elseif (isset($bData['nrcState']) && isset($bData['nrcNumber'])) {
         $beneficiaryNrc = $bData['nrcState'] . '/' . ($bData['nrcTownship'] ?? '') .
                           '(' . ($bData['nrcType'] ?? 'N') . ')' . $bData['nrcNumber'];
     }
@@ -191,7 +195,7 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
         'name'         => $bData['name'],
         'phone'        => $bData['phone'] ?? $customer->phone,
         'relationship' => $bData['relationship'] ?? 'Self',
-        'nrc'          => $beneficiaryNrc, // Now this won't be null
+        'nrc'          => $beneficiaryNrc, 
     ]);
     $beneficiaryId = $beneficiary->beneficiary_id;
 }
@@ -213,7 +217,7 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
             'vehicle'        => $request->vehicle,
             'premium_amount' => $totalPremium,
             'status'         => 'pending',
-            // Note: ticket_image is usually on the contract table, but updated on customer based on your request
+             
         ]);
 
         // 9. Save All Declaration Results
@@ -304,5 +308,23 @@ private function generateContractId()
     $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
 
     return $prefix . $newNumber;
+}
+
+public function show($id)
+{
+
+    $contract = Contract::with(['customer', 'beneficiary'])->findOrFail($id);
+
+    return Inertia::render('Admin/ContractDetail', [
+        'contract' => $contract,
+    ]);
+}
+
+public function updateStatus(Request $request, $id) {
+    $contract = Contract::findOrFail($id);
+    $contract->status = $request->status;
+    $contract->save();
+
+    return back()->with('success', 'Status updated successfully!');
 }
 }
