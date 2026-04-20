@@ -32,7 +32,8 @@ class Contract extends Model
         'status',
         'nrc',
         'passport',
-        'ticket_image'
+        'ticket_image',
+        'payment_token'
     ];
 
     protected $casts = [

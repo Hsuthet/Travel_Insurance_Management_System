@@ -66,6 +66,7 @@ class ContractController extends Controller
         'customer_info.nrcState'   => 'required',
         'customer_info.nrcNumber'  => 'required',
         'plan_id'                  => 'required|exists:plans,plan_id',
+        'payment_token'            => 'required|string',
         'start_date'               => 'required|date|after_or_equal:today',
         'end_date'                 => 'required|date|after_or_equal:start_date',
         'destination'              => 'required|string',
@@ -108,7 +109,7 @@ class ContractController extends Controller
     DB::beginTransaction();
     try {
         $customerData = $request->customer_info;
-        
+
         // 3. Format NRC String
         $nrcFormatted = $customerData['nrcState'] . '/' . ($customerData['nrcTownship'] ?? '') .
                         '(' . ($customerData['nrcType'] ?? 'N') . ')' . $customerData['nrcNumber'];
@@ -173,15 +174,19 @@ class ContractController extends Controller
             $customer->update(['ticket_image' => $imagePath]);
         }
 
-        // 6. Beneficiary
-        // 6. Beneficiary Logic
+// 6. Beneficiary Logic
 $beneficiaryId = null;
 if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name'])) {
     $bData = $request->beneficiary_info;
-    
-    // ✅ Format Beneficiary NRC String
+
     $beneficiaryNrc = null;
-    if (isset($bData['nrcState']) && isset($bData['nrcNumber'])) {
+
+    // Check if frontend sent the ALREADY formatted string
+    if (isset($bData['nrc']) && !empty($bData['nrc'])) {
+        $beneficiaryNrc = $bData['nrc'];
+    } 
+    // Fallback: If frontend sent raw parts (nrcState, nrcNumber, etc.)
+    elseif (isset($bData['nrcState']) && isset($bData['nrcNumber'])) {
         $beneficiaryNrc = $bData['nrcState'] . '/' . ($bData['nrcTownship'] ?? '') .
                           '(' . ($bData['nrcType'] ?? 'N') . ')' . $bData['nrcNumber'];
     }
@@ -191,7 +196,7 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
         'name'         => $bData['name'],
         'phone'        => $bData['phone'] ?? $customer->phone,
         'relationship' => $bData['relationship'] ?? 'Self',
-        'nrc'          => $beneficiaryNrc, // Now this won't be null
+        'nrc'          => $beneficiaryNrc, 
     ]);
     $beneficiaryId = $beneficiary->beneficiary_id;
 }
@@ -212,8 +217,9 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
             'destination'    => $request->destination,
             'vehicle'        => $request->vehicle,
             'premium_amount' => $totalPremium,
+            'payment_token'  => $request->payment_token,
             'status'         => 'pending',
-            // Note: ticket_image is usually on the contract table, but updated on customer based on your request
+
         ]);
 
         // 9. Save All Declaration Results
@@ -244,40 +250,40 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
 }
 
 /**
- * Admin Approves the application
- */
+* Admin Approves the application
+*/
 public function approve($id)
 {
     $contract = Contract::findOrFail($id);
-    
+
     if ($contract->status !== 'pending') {
         return response()->json(['message' => 'Only pending contracts can be approved'], 400);
     }
 
     $contract->update(['status' => 'wait_pay']);
-    
+
     return response()->json(['message' => 'Contract approved. Waiting for payment.']);
 }
 
 /**
- * Admin Rejects the application
- */
+* Admin Rejects the application
+*/
 public function reject($id)
 {
     $contract = Contract::findOrFail($id);
     $contract->update(['status' => 'rejected']);
-    
+
     return response()->json(['message' => 'Contract rejected.']);
 }
 
 /**
- * Admin Cancels an existing contract
- */
+* Admin Cancels an existing contract
+*/
 public function cancel($id)
 {
     $contract = Contract::findOrFail($id);
     $contract->update(['status' => 'canceled']);
-    
+
     return response()->json(['message' => 'Contract has been canceled.']);
 }
 
@@ -298,11 +304,29 @@ private function generateContractId()
 
     // Clean the string to ensure no whitespace is breaking the substr
     $currentId = trim($latestContract->contract_id);
-    
+
     // Extract the number from the end
     $lastNumber = (int) substr($currentId, -4);
     $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
 
     return $prefix . $newNumber;
+}
+
+public function show($id)
+{
+
+    $contract = Contract::with(['customer', 'beneficiary'])->findOrFail($id);
+
+    return Inertia::render('Admin/ContractDetail', [
+        'contract' => $contract,
+    ]);
+}
+
+public function updateStatus(Request $request, $id) {
+    $contract = Contract::findOrFail($id);
+    $contract->status = $request->status;
+    $contract->save();
+
+    return back()->with('success', 'Status updated successfully!');
 }
 }

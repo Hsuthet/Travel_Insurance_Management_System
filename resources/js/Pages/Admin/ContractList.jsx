@@ -5,36 +5,49 @@ import { Head, router } from '@inertiajs/react';
 import { List, Calendar, ChevronDown } from 'lucide-react';
 
 export default function ContractList({ contracts, auth, filters }) {
-    
+    console.log("Contracts Data:", contracts);
     // 1. Local States for filtering
     const [status, setStatus] = useState(filters.status || 'Status');
     const [startDate, setStartDate] = useState(filters.startDate || '');
     const [endDate, setEndDate] = useState(filters.endDate || '');
-    
+
     // Ref to prevent the first render from triggering a router.get
     const isFirstRender = useRef(true);
 
     const planNames = { 1: 'Basic', 2: 'Standard', 3: 'Premium' };
 
     // 2. Status Badge Renderer
-    const renderStatus = (val) => {
-        const key = val ? val.toLowerCase().replace('_', ' ') : 'default';
-        const styles = {
-            'active':   'bg-emerald-100 text-emerald-700 border-emerald-200',
-            'expire':   'bg-rose-100 text-rose-700 border-rose-200',
-            'cancel':   'bg-amber-100 text-amber-700 border-amber-200',
-            'pending':  'bg-orange-100 text-orange-700 border-orange-200',
-            'wait pay': 'bg-blue-100 text-blue-700 border-blue-200',
-            'rejected': 'bg-purple-100 text-purple-700 border-purple-200',
-        };
+const renderStatus = (row) => {
+    // 1. Get the actual status from the database first
+    const dbStatus = row.status ? String(row.status).toLowerCase().replace('_', ' ') : 'default';
 
-        return (
-            <span className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-wider ${styles[key] || 'bg-slate-100 text-slate-600'}`}>
-                {key}
-            </span>
-        );
+    // 2. Determine the display key
+    let displayKey = dbStatus;
+
+    // 3. ONLY override with 'expired' if it's currently an active-type status
+    // This prevents 'claimed' or 'canceled' from being overwritten by 'expired'
+    const activeStatuses = ['active', 'approved', 'wait pay', 'pending'];
+    if (row.is_expired && activeStatuses.includes(dbStatus)) {
+        displayKey = 'expired';
+    }
+
+    const styles = {
+        'active':   'bg-emerald-100 text-emerald-700 border-emerald-200',
+        'approved': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        'expired':  'bg-rose-100 text-rose-700 border-rose-200',
+        'claimed':  'bg-indigo-100 text-indigo-700 border-indigo-200',
+        'cancel':   'bg-amber-100 text-amber-700 border-amber-200',
+        'pending':  'bg-orange-100 text-orange-700 border-orange-200',
+        'wait pay': 'bg-blue-100 text-blue-700 border-blue-200', 
+        'rejected': 'bg-purple-100 text-purple-700 border-purple-200',
     };
 
+    return (
+        <span className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-wider ${styles[displayKey] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+            {displayKey}
+        </span>
+    );
+};
     // 3. Reset Function
     const resetFilters = () => {
         setStatus('Status');
@@ -55,7 +68,7 @@ export default function ContractList({ contracts, auth, filters }) {
     }
 
     const queryParams = {};
-    
+
     // Only add to URL if a real filter is picked
     if (status !== 'Status') queryParams.status = status;
     if (startDate) queryParams.startDate = startDate;
@@ -74,66 +87,79 @@ export default function ContractList({ contracts, auth, filters }) {
 }, [status, startDate, endDate]);
 
     // 4. Columns Definition
-    const columns = [
-        { 
+   const columns = [
+    { 
         label: 'No', 
         key: 'id', 
-        render: (_, __, index) => {
-            // Calculate continuous numbering across pages
-            // pagination.current_page starts at 1, per_page is usually 10
+        // In your DataTable, the first arg is the whole row
+        render: (row, index) => {
             return (contracts.current_page - 1) * contracts.per_page + (index + 1);
         }
     },
-        { label: 'Policy No', key: 'policy_no', render: (val) => val || '-' },
-        { 
-            label: 'Customer', 
-            key: 'customer', 
-            render: (c) => <span className="font-bold text-slate-700">{c?.name || 'N/A'}</span> 
-        },
-        { label: 'Plan', key: 'plan_id', render: (id) => planNames[id] || 'Unknown' },
-        { 
-            label: 'Applied Date', 
-            key: 'created_at', 
-            render: (date) => date ? new Date(date).toLocaleDateString('ja-JP') : '-' 
-        },
-        { 
-            label: 'Premium', 
-            key: 'premium_amount',
-            render: (amt) => <span className="font-bold">{Number(amt).toLocaleString()}</span>
-        },
-        { 
-            label: 'Status', 
-            key: 'status',
-            render: (val) => <div className="flex justify-center">{renderStatus(val)}</div>
-        },
-        { 
-            label: 'Action', 
-            key: 'actions', 
-            render: (_, row) => (
-                <div className="flex justify-center">
-                    <button 
-                        onClick={() => router.get(route('admin.contracts.show', row.contract_id))}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-1.5 rounded-xl text-xs font-black shadow-sm transition-all uppercase"
-                    >
-                        View
-                    </button>
-                </div>
-            )
-        }
-    ];
+    { 
+        label: 'Policy No', 
+        key: 'policy_no', 
+        render: (row) => row.policy_no || '-' 
+    },
+    { 
+        label: 'Customer', 
+        key: 'customer', 
+        // This was the crasher: row.customer was likely undefined because 
+        // you might have been expecting the first arg to be the customer object
+        render: (row) => (
+            <span className="font-bold text-slate-700">
+                {row.customer?.name || 'N/A'}
+            </span>
+        ) 
+    },
+    { 
+        label: 'Plan', 
+        key: 'plan_id', 
+        render: (row) => planNames[row.plan_id] || 'Unknown' 
+    },
+    { 
+        label: 'Applied Date', 
+        key: 'created_at', 
+        render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString('ja-JP') : '-' 
+    },
+    { 
+        label: 'Premium', 
+        key: 'premium_amount',
+        render: (row) => <span className="font-bold">{Number(row.premium_amount).toLocaleString()}</span>
+    },
+    { 
+    label: 'Status', 
+    key: 'status',
+    render: (row) => <div className="flex justify-center">{renderStatus(row)}</div> 
+},
+    { 
+        label: 'Action', 
+        key: 'actions', 
+        render: (row) => (
+            <div className="flex justify-center">
+                <button 
+                    onClick={() => router.get(route('admin.contracts.show', row.contract_id))}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-1.5 rounded-xl text-xs font-black shadow-sm transition-all uppercase"
+                >
+                    View
+                </button>
+            </div>
+        )
+    }
+];
 
     return (
         <AdminLayout auth={auth}>
             <Head title="Contract List" />
             <div className="p-8 bg-[#F8FAFC] min-h-screen">
-                
+
                 {/* Main Content Card */}
                 <div className="bg-white rounded-[2rem] shadow-sm border-2 border-blue-100 overflow-hidden">
-                    
+
                     {/* Header & Integrated Filters */}
                     <div className="p-6 border-b border-slate-100 bg-white">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            
+
                             <div className="flex items-center gap-3 shrink-0">
                                 <div className="p-2 bg-blue-600 rounded-lg text-white">
                                     <List size={24} />
@@ -142,7 +168,7 @@ export default function ContractList({ contracts, auth, filters }) {
                             </div>
 
                             <div className="flex flex-wrap items-center justify-end gap-3 w-full">
-                                
+
                                 {/* Status Dropdown */}
                                 <div className="relative">
                                     <select
@@ -154,7 +180,7 @@ export default function ContractList({ contracts, auth, filters }) {
                                         <option value="Active">Active</option>
                                         <option value="Pending">Pending</option>
                                         <option value="Wait_pay">Wait Pay</option>
-                                        <option value="Expire">Expire</option>
+                                        <option value="Expired">Expired</option>
                                         <option value="Cancel">Cancel</option>
                                     </select>
                                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -177,7 +203,7 @@ export default function ContractList({ contracts, auth, filters }) {
                                         className="bg-transparent border-none p-0 focus:ring-0 text-sm font-medium text-slate-500 w-28 uppercase" 
                                     />
                                 </div>
-                                
+
                                 <button 
                                     onClick={resetFilters} 
                                     className="bg-[#D3E3F8] hover:bg-blue-200 text-blue-600 font-bold px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm"
