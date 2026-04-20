@@ -235,6 +235,7 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
             'status'         => 'pending',
 
         ]);
+}
 
         // 9. Save All Declaration Results
         foreach ($request->results as $row) {
@@ -263,9 +264,7 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
     }
 }
 
-/**
-* Admin Approves the application
-*/
+
 public function approve($id)
 {
     $contract = Contract::findOrFail($id);
