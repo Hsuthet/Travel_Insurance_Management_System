@@ -43,9 +43,37 @@ class Contract extends Model
     ];
 
     // Accessor for expiration status
-    public function getIsExpiredAttribute() {
-        return now()->gt($this->end_date);
+   // Add this to your $appends array so it's included in JSON/Inertia responses
+protected $appends = ['is_expired', 'can_claim'];
+
+/**
+ * Enhanced Expiration Check
+ * A contract is expired if today's date has passed the end_date.
+ */
+public function getIsExpiredAttribute() 
+{
+    // Use endOfDay() to ensure the user is covered until 11:59 PM on their last day
+    return now()->startOfDay()->gt(Carbon::parse($this->end_date)->endOfDay());
+}
+
+/**
+ * Claim Validation Logic
+ * Determines if a claim can technically be filed against this contract.
+ */
+public function getCanClaimAttribute()
+{
+    // 1. Must be approved (or 'active' depending on your naming)
+    if ($this->status !== 'approved') {
+        return false;
     }
+
+    // 2. Must not be expired
+    if ($this->is_expired) {
+        return false;
+    }
+
+    return true;
+}
 
     // --- RELATIONSHIPS ---
 
@@ -67,6 +95,6 @@ class Contract extends Model
     
     public function payments() { return $this->hasMany(Payment::class, 'contract_id'); }
 
-    public function claims(){ return $this->hasMany(Claim::class, 'contract_id', 'contract_id');}
+    public function claims(){ return $this->hasMany(Claim::class, 'policy_no', 'policy_no');}
 
 }

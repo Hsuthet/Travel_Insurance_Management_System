@@ -20,7 +20,7 @@ export default function ContractList({ contracts, auth, filters }) {
 const renderStatus = (row) => {
     // 1. Get the actual status from the database first
     const dbStatus = row.status ? String(row.status).toLowerCase().replace('_', ' ') : 'default';
-
+    
     // 2. Determine the display key
     let displayKey = dbStatus;
 
