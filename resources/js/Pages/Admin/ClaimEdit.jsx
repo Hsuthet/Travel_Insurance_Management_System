@@ -5,7 +5,7 @@ import { router, Head, useForm, Link } from '@inertiajs/react';
 export default function ClaimEdit({ auth, claim }) {
     const [showRejectBox, setShowRejectBox] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [pendingStatus, setPendingStatus] = useState(null);
+    const [pendingclaim_status, setPendingclaim_status] = useState(null);
 
     const planDetails = {
         '1': { name: 'Basic', amount: 25000, coverage: 'Medical Only' },
@@ -22,7 +22,7 @@ export default function ClaimEdit({ auth, claim }) {
         accident_date: claim.accident_date ? claim.accident_date.substring(0, 10) : '',
         claim_amount: claim.claim_amount || '',
         description: claim.accident_description || '',
-        status: claim.status || 'pending',
+        claim_status: claim.claim_status || 'pending',
         reject_reason: '',
     });
 
@@ -35,19 +35,19 @@ export default function ClaimEdit({ auth, claim }) {
         }));
     };
 
-    const triggerConfirm = (status) => {
-        if (status === 'rejected' && !data.reject_reason) {
+    const triggerConfirm = (claim_status) => {
+        if (claim_status === 'rejected' && !data.reject_reason) {
             alert('Please provide a reason for rejection.');
             return;
         }
-        setPendingStatus(status);
+        setPendingclaim_status(claim_status);
         setShowConfirmModal(true);
     };
 
     const handleFinalSubmit = () => {
         setShowConfirmModal(false);
-        router.patch(route('claims.status', { id: claim.claim_id }), {
-            status: pendingStatus,
+        router.patch(route('claims.claim_status', { id: claim.claim_id }), {
+            claim_status: pendingclaim_status,
             plan_id: data.plan_id,
             claim_amount: data.claim_amount,
             reject_reason: data.reject_reason
@@ -62,7 +62,7 @@ export default function ClaimEdit({ auth, claim }) {
                 <div className="border-b border-slate-100 pb-4 mb-6 flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800">Edit & Review Claim</h1>
-                        <p className="text-slate-500 font-medium italic">Current Status: {claim.status}</p>
+                        <p className="text-slate-500 font-medium italic">Current claim_status: {claim.claim_status}</p>
                     </div>
                 </div>
 
@@ -194,8 +194,8 @@ export default function ClaimEdit({ auth, claim }) {
                             <h3 className="text-xl font-bold text-slate-800 mb-2">Are you sure?</h3>
                             <p className="text-slate-600 mb-6 leading-relaxed">
                                 You are marking this claim as
-                                <span className={`mx-1 font-bold ${pendingStatus === 'claimed' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {pendingStatus === 'claimed' ? 'APPROVED' : 'REJECTED'}
+                                <span className={`mx-1 font-bold ${pendingclaim_status === 'claimed' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {pendingclaim_status === 'claimed' ? 'APPROVED' : 'REJECTED'}
                                 </span>
                                 for a total of <strong>{Number(data.claim_amount).toLocaleString()} MMK</strong>.
                             </p>
@@ -209,7 +209,7 @@ export default function ClaimEdit({ auth, claim }) {
                                 <button
                                     onClick={handleFinalSubmit}
                                     className={`px-5 py-2 text-sm font-bold text-white rounded-lg shadow-md transition-all ${
-                                        pendingStatus === 'claimed' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                                        pendingclaim_status === 'claimed' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
                                     }`}
                                 >
                                     Confirm

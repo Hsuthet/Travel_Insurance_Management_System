@@ -13,7 +13,7 @@ const DataTable = ({
 }) => {
     const [search, setSearch] = useState('');
 
-    // Filtered data based on search input
+    // 1. Filter data first based on search
     const filteredData = useMemo(() => {
         if (!search) return data;
         return data.filter(row =>
@@ -25,10 +25,20 @@ const DataTable = ({
         );
     }, [data, columns, search]);
 
-    const totalPages = pagination?.last_page || 1;
+    // 2. State & Props for Pagination
     const currentPage = pagination?.current_page || 1;
+    const perPage = pagination?.per_page || 10;
+    
+    // Calculate total pages based on filtered results
+    const totalPages = pagination?.last_page || Math.ceil(filteredData.length / perPage);
 
-    // Helper to get correct ID (row.id or row.claim_id or row.user_id etc.)
+    // 3. SLICE the data for the current page (The Fix)
+    const paginatedData = useMemo(() => {
+        const startIndex = (currentPage - 1) * perPage;
+        const endIndex = startIndex + perPage;
+        return filteredData.slice(startIndex, endIndex);
+    }, [filteredData, currentPage, perPage]);
+
     const getRowId = (row) => row.contract_id || row.id || row.claim_id || row.user_id;
 
     const renderPageNumbers = () => {
@@ -62,6 +72,13 @@ const DataTable = ({
                     <h2 className="text-lg font-bold text-slate-800">{title}</h2>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
+                    <input 
+                        type="text"
+                        placeholder="Search..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="border border-slate-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-64"
+                    />
                     {renderExtra && <div className="shrink-0">{renderExtra}</div>}
                 </div>
             </div>
@@ -79,25 +96,22 @@ const DataTable = ({
                         </tr>
                     </thead>
                     <tbody className="text-slate-600">
-                        {filteredData?.length > 0 ? (
-                            filteredData.map((row, i) => (
+                        {paginatedData?.length > 0 ? (
+                            paginatedData.map((row, i) => (
                                 <tr 
                                     key={getRowId(row) || i} 
                                     className="border-b border-slate-50 hover:bg-blue-50/30 transition-colors"
                                 >
                                     {columns?.map(col => (
                                         <td key={col.key || col.label} className="p-4">
-                                            {/* Logic: Priority 1: Custom Render function */}
                                             {col.render ? (
                                                 col.render(row, i)
                                             ) : col.key === 'actions' ? (
-                                                /* Logic: Priority 2: Built-in Actions */
                                                 <div className="flex gap-2">
                                                     {onEdit && (
                                                         <button
                                                             onClick={() => onEdit(getRowId(row))}
                                                             className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-                                                            title="Edit"
                                                         >
                                                             <Edit3 size={16} />
                                                         </button>
@@ -106,14 +120,12 @@ const DataTable = ({
                                                         <button
                                                             onClick={() => onDelete(getRowId(row))}
                                                             className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-all"
-                                                            title="Delete"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
                                                     )}
                                                 </div>
                                             ) : (
-                                                /* Logic: Priority 3: Simple key value */
                                                 row?.[col.key] ?? '-'
                                             )}
                                         </td>
@@ -137,7 +149,7 @@ const DataTable = ({
                     <span>Show</span>
                     <select
                         className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer"
-                        value={pagination?.per_page || 10}
+                        value={perPage}
                         onChange={e => pagination?.onLimitChange?.(Number(e.target.value))}
                     >
                         {[5, 10, 25, 50].map(v => (

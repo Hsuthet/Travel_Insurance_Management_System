@@ -20,15 +20,20 @@ class ContractController extends Controller
 {
     public function index(Request $request)
 {
-    // 1. Start the query with relationships
     $query = Contract::with(['customer', 'plan']);
 
-    // 2. Filter by status
+    // 1. Handle Status Filter (including the 'expired' logic)
     if ($request->filled('status') && $request->status !== 'Status') {
-        $query->where('status', $request->status);
+        if ($request->status === 'expired') {
+            // Expired = Approved but today is past the end_date
+            $query->where('status', 'approved')
+                  ->whereDate('end_date', '<', now());
+        } else {
+            $query->where('status', $request->status);
+        }
     }
 
-    // 3. Date Filters
+    // 2. Date Filters (Existing)
     if ($request->filled('startDate')) {
         $query->whereDate('created_at', '>=', $request->startDate);
     }
@@ -36,12 +41,11 @@ class ContractController extends Controller
         $query->whereDate('created_at', '<=', $request->endDate);
     }
 
-    // 4. Get results
     $contracts = $query->latest()
         ->paginate(10)
         ->withQueryString();
 
-    //  CHECK FOR POSTMAN / API REQUESTS
+    // Check for API requests
     if ($request->wantsJson() || $request->is('api/*')) {
         return response()->json([
             'status' => true,
@@ -49,12 +53,13 @@ class ContractController extends Controller
         ]);
     }
 
-    // Otherwise, return for the React/Inertia frontend
     return Inertia::render('Admin/ContractList', [
         'contracts' => $contracts,
+        // Send back all filters so the UI stays in sync
         'filters' => $request->only(['status', 'startDate', 'endDate']),
     ]);
 }
+
     public function apply(Request $request)
 {
     // 1. Initial Validation
@@ -66,6 +71,7 @@ class ContractController extends Controller
         'customer_info.nrcState'   => 'required',
         'customer_info.nrcNumber'  => 'required',
         'plan_id'                  => 'required|exists:plans,plan_id',
+        'payment_token'            => 'required|string',
         'start_date'               => 'required|date|after_or_equal:today',
         'end_date'                 => 'required|date|after_or_equal:start_date',
         'destination'              => 'required|string',
@@ -108,7 +114,7 @@ class ContractController extends Controller
     DB::beginTransaction();
     try {
         $customerData = $request->customer_info;
-        
+
         // 3. Format NRC String
         $nrcFormatted = $customerData['nrcState'] . '/' . ($customerData['nrcTownship'] ?? '') .
                         '(' . ($customerData['nrcType'] ?? 'N') . ')' . $customerData['nrcNumber'];
@@ -174,11 +180,19 @@ class ContractController extends Controller
         }
 
 // 6. Beneficiary Logic
+// 6. Beneficiary Logic
 $beneficiaryId = null;
 if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name'])) {
     $bData = $request->beneficiary_info;
-    
+
     $beneficiaryNrc = null;
+
+    // Check if frontend sent the ALREADY formatted string
+    if (isset($bData['nrc']) && !empty($bData['nrc'])) {
+        $beneficiaryNrc = $bData['nrc'];
+    } 
+    // Fallback: If frontend sent raw parts (nrcState, nrcNumber, etc.)
+    elseif (isset($bData['nrcState']) && isset($bData['nrcNumber'])) {
 
     // Check if frontend sent the ALREADY formatted string
     if (isset($bData['nrc']) && !empty($bData['nrc'])) {
@@ -195,6 +209,7 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
         'name'         => $bData['name'],
         'phone'        => $bData['phone'] ?? $customer->phone,
         'relationship' => $bData['relationship'] ?? 'Self',
+        'nrc'          => $beneficiaryNrc, 
         'nrc'          => $beneficiaryNrc, 
     ]);
     $beneficiaryId = $beneficiary->beneficiary_id;
@@ -216,9 +231,11 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
             'destination'    => $request->destination,
             'vehicle'        => $request->vehicle,
             'premium_amount' => $totalPremium,
+            'payment_token'  => $request->payment_token,
             'status'         => 'pending',
-             
+
         ]);
+}
 
         // 9. Save All Declaration Results
         foreach ($request->results as $row) {
@@ -252,41 +269,39 @@ if ($request->has('beneficiary_info') && !empty($request->beneficiary_info['name
     }
 }
 
-/**
- * Admin Approves the application
- */
+
 public function approve($id)
 {
     $contract = Contract::findOrFail($id);
-    
+
     if ($contract->status !== 'pending') {
         return response()->json(['message' => 'Only pending contracts can be approved'], 400);
     }
 
     $contract->update(['status' => 'wait_pay']);
-    
+
     return response()->json(['message' => 'Contract approved. Waiting for payment.']);
 }
 
 /**
- * Admin Rejects the application
- */
+* Admin Rejects the application
+*/
 public function reject($id)
 {
     $contract = Contract::findOrFail($id);
     $contract->update(['status' => 'rejected']);
-    
+
     return response()->json(['message' => 'Contract rejected.']);
 }
 
 /**
- * Admin Cancels an existing contract
- */
+* Admin Cancels an existing contract
+*/
 public function cancel($id)
 {
     $contract = Contract::findOrFail($id);
     $contract->update(['status' => 'canceled']);
-    
+
     return response()->json(['message' => 'Contract has been canceled.']);
 }
 
@@ -307,7 +322,7 @@ private function generateContractId()
 
     // Clean the string to ensure no whitespace is breaking the substr
     $currentId = trim($latestContract->contract_id);
-    
+
     // Extract the number from the end
     $lastNumber = (int) substr($currentId, -4);
     $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
