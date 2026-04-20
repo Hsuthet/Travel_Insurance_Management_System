@@ -39,29 +39,29 @@ class ProcessGmoPayment extends Command
                 $finalAccessId = 'TEST_MODE_' . uniqid(); 
 
                 
-                DB::transaction(function () use ($contract, $finalAccessId) {
-                    
-                    
-                    $idParts = explode('-', $contract->contract_id);
-                    $numericPart = end($idParts); 
-                    
-                    $policyNo = 'POL-' . str_pad($numericPart, 5, '0', STR_PAD_LEFT);
+               DB::transaction(function () use ($contract, $finalAccessId) {
+    $currentCount = DB::table('payments')->where('status', 'success')->count();
 
-                    DB::table('payments')->insert([
-                        'contract_id'    => $contract->contract_id,
-                        'gmo_access_id'  => $finalAccessId,
-                        'payment_amount' => $contract->premium_amount,
-                        'status'         => 'success',
-                        'created_at'     => now(),
-                    ]);
+    $nextNumber = $currentCount + 1;
 
-                    DB::table('contracts')->where('contract_id', $contract->contract_id)->update([
-                        'status'     => 'active',
-                        'policy_no'  => $policyNo, 
-                        'updated_at' => now()
-                    ]);
-                
-                });
+    $policyNo = 'POL-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+ 
+   
+    DB::table('payments')->insert([
+        'contract_id'    => $contract->contract_id,
+        'gmo_access_id'  => $finalAccessId,
+        'payment_amount' => $contract->premium_amount,
+        'status'         => 'success',
+        'created_at'     => now(),
+    ]);
+ 
+  
+    DB::table('contracts')->where('contract_id', $contract->contract_id)->update([
+        'status'    => 'active',
+        'policy_no' => $policyNo,
+        'updated_at' => now()
+    ]);
+});
 
                 $this->info("SUCCESS: Contract {$contract->contract_id} is now ACTIVE.");
 
