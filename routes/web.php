@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ClaimController;
 use App\Http\Controllers\ProfileController;
-// use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\ReportController;
@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\PremiumController;
+use App\Http\Controllers\PaymentController;
 
 use Inertia\Inertia;
 
@@ -92,7 +93,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// 4. Redirect root to the payment page
-Route::get('/', function () {
-    return redirect()->route('admin.payments.index');
-});
+Route::get('/admin/payments', [PaymentController::class, 'index'])->name('admin.payments.index');
+
+require __DIR__.'/auth.php';

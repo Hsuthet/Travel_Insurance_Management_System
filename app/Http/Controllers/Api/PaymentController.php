@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Payment; 
+use App\Models\Payment;
+use App\Models\Contract; // Contract model ကို import လုပ်ပါ
+use Illuminate\Support\Facades\DB; // DB transaction အတွက် လိုအပ်ပါတယ်
 use Inertia\Inertia;
 use Carbon\Carbon;
 use App\Services\GMOPaymentService; // Correct service path
