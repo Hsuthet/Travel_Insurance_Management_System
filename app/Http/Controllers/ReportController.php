@@ -24,7 +24,9 @@ public function index()
             $payment = $contract->payments->first(); 
             $customer = $contract->customer;
             $beneficiary = $contract->beneficiary;
-            $claim = $contract->claims->last(); 
+           
+            $latestClaim = $contract->claims()->latest('updated_at')->first();
+
 
             return [
                
@@ -37,7 +39,15 @@ public function index()
                                     ? \Carbon\Carbon::parse($payment->pay_date)->format('d-m-Y') 
                                     : $contract->created_at->format('d-m-Y'),
                 'status'        => $contract->status,
-                'claim_status' => $contract->claims->count() > 0 ? 'Claimed' : 'No Claim',
+
+              'claim_status' => ($contract->status === 'active' && $latestClaim)
+                                    ? match (strtolower($latestClaim->claim_status)) { 
+                                        'accepted' => 'Claimed',
+                                        'pending'  => 'Pending',
+                                        'rejected' => 'Rejected',
+                                        default    => 'No Claim',
+                                    }
+                                    : 'No Claim',
 
              
                 'customer_nrc'     => $customer->nrc ?? '-',
@@ -53,7 +63,7 @@ public function index()
                 'beneficiary_name' => $beneficiary->name ?? '-',
                 'beneficiary_rel'  => $beneficiary->relationship ?? '-',
                 'claim_amount'     => $claim->claim_amount ?? 0,
-                'payment_method'   => $payment->payment_method ?? '-',
+               
             ];
         });
 

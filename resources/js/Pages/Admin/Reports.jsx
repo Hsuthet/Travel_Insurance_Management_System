@@ -39,9 +39,11 @@ export default function Reports({ auth, reports, pagination }) {
         );
     };
 
-    const renderClaimStatus = (claimStatus) => {
+   const renderClaimStatus = (claimStatus) => {
     const styles = {
         'Claimed': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        'Pending': 'bg-amber-100 text-amber-600 border-amber-200',   
+        'Rejected': 'bg-rose-100 text-rose-700 border-rose-200',    
         'No Claim': 'bg-slate-100 text-slate-500 border-slate-200',
     };
     
@@ -50,8 +52,10 @@ export default function Reports({ auth, reports, pagination }) {
             {claimStatus}
         </span>
     );
+};    
+  
 
-};
+
 
 const downloadExcel = async () => {
     if (!filteredReports || filteredReports.length === 0) return;
@@ -63,7 +67,7 @@ const downloadExcel = async () => {
     const headers = [
         "Policy Number", "Customer Name", "NRC", "Phone", "Address", "DOB",
         "Plan", "Premium", "Purchase Date", "Trip Type", "Destination", "Vehicle",
-        "Status", "Claim Status", "Claim Amount", "Beneficiary", "Relationship", "Payment Method"
+        "Status", "Claim Status", "Claim Amount", "Beneficiary", "Relationship", 
     ];
     
     const headerRow = worksheet.addRow(headers);
@@ -100,8 +104,8 @@ const downloadExcel = async () => {
             originalReport.claim_status || '-',
             r.claim_amount || 0,
             r.beneficiary_name || '-',
-            r.beneficiary_rel || '-',
-            r.payment_method || '-'
+            r.beneficiary_rel || '-'
+           
         ];
 
         const row = worksheet.addRow(rowData);
@@ -122,11 +126,22 @@ const downloadExcel = async () => {
         }
 
        
-        const claimCell = row.getCell(14); // Column N (Claim Status)
-        if (String(originalReport.claim_status).toLowerCase() === 'claimed') {
-            claimCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DBEAFE' } }; // Light Blue
-            claimCell.font = { color: { argb: '1D4ED8' }, bold: true };
-        }
+      
+            const claimCell = row.getCell(14); 
+            const claimValue = String(originalReport.claim_status).toLowerCase();
+
+            if (claimValue === 'claimed') {
+                claimCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DCFCE7' } }; // Green
+                claimCell.font = { color: { argb: '15803D' }, bold: true };
+            } else if (claimValue === 'pending') {
+                claimCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FEF3C7' } }; // Yellow
+                claimCell.font = { color: { argb: 'B45309' }, bold: true };
+            } else if (claimValue === 'rejected') {
+                claimCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FEE2E2' } }; // Red
+                claimCell.font = { color: { argb: 'B91C1C' }, bold: true };
+            } else {
+                claimCell.font = { color: { argb: '64748B' } }; 
+            }
     });
 
    
@@ -223,6 +238,8 @@ const downloadExcel = async () => {
                                     >
                                         <option value="Claim Status">Claim Status</option>
                                         <option value="Claimed">Claimed</option>
+                                        <option value="Pending">Pending</option>  
+                                        <option value="Rejected">Rejected</option> 
                                         <option value="No Claim">No Claim</option>
                                     </select>
                                 </div>
@@ -260,7 +277,7 @@ const downloadExcel = async () => {
                     <DataTable 
                         columns={columns}
                         data={filteredReports}
-                        pagination={pagination}
+                        pagination={reports}
                     />
                 </div>
             </div>
