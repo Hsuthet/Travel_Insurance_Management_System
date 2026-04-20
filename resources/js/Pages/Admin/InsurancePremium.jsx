@@ -1,7 +1,7 @@
 import React, { useState } from 'react'; 
 import AdminLayout from '@/Layouts/AdminLayout'; 
 import { Head } from '@inertiajs/react';
-import { ClipboardList, Calendar } from 'lucide-react'; 
+import { CircleDollarSign, Calendar } from 'lucide-react'; 
 
 export default function InsurancePremium({ auth, premiums }) {
    
@@ -30,7 +30,7 @@ export default function InsurancePremium({ auth, premiums }) {
                             {/* Left Side: Title & Icon */}
                             <div className="flex items-center gap-3 shrink-0">
                                 <div className="p-2 bg-blue-600 rounded-lg text-white">
-                                    <ClipboardList size={24} />
+                                    <CircleDollarSign size={24} />
                                 </div>
                                 <h1 className="text-2xl font-black text-blue-600 tracking-tight">Insurance Premium</h1>
                             </div>

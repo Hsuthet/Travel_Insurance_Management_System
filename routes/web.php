@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ClaimController;
 use App\Http\Controllers\ProfileController;
-// use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\ReportController;
