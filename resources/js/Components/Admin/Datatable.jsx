@@ -13,7 +13,7 @@ const DataTable = ({
 }) => {
     const [search, setSearch] = useState('');
 
-    // 1. Filter data first based on search
+    // 1. Search filter logic
     const filteredData = useMemo(() => {
         if (!search) return data;
         return data.filter(row =>
@@ -25,21 +25,13 @@ const DataTable = ({
         );
     }, [data, columns, search]);
 
-    // 2. State & Props for Pagination
+    // 2. Pagination Props from Laravel
     const currentPage = pagination?.current_page || 1;
-    const perPage = pagination?.per_page || 10;
-    
-    // Calculate total pages based on filtered results
-    const totalPages = pagination?.last_page || Math.ceil(filteredData.length / perPage);
+    const perPage = pagination?.per_page || 5;
+    const totalPages = pagination?.last_page || 1;
 
-    // 3. SLICE the data for the current page (The Fix)
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * perPage;
-        const endIndex = startIndex + perPage;
-        return filteredData.slice(startIndex, endIndex);
-    }, [filteredData, currentPage, perPage]);
-
-    const getRowId = (row) => row.contract_id || row.id || row.claim_id || row.user_id;
+   
+    const displayData = filteredData; 
 
     const renderPageNumbers = () => {
         let pages = [];
@@ -63,7 +55,6 @@ const DataTable = ({
 
     return (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div className="flex items-center gap-3">
                     <div className="bg-blue-600 text-white p-2 rounded-lg shadow-md shadow-blue-100">
@@ -83,10 +74,9 @@ const DataTable = ({
                 </div>
             </div>
 
-            {/* Table Area */}
             <div className="overflow-x-auto rounded-xl border border-slate-100">
                 <table className="w-full text-sm text-left border-collapse">
-                    <thead className="bg-[#D3E3F8] text-slate-500 uppercase text-[11px] tracking-wider font-bold">
+                    <thead className="bg-[#D3E3F8] text-slate-800 uppercase text-[11px] tracking-wider font-black">
                         <tr>
                             {columns?.map(col => (
                                 <th key={col.key || col.label} className="p-4 border-b border-slate-100">
@@ -96,59 +86,31 @@ const DataTable = ({
                         </tr>
                     </thead>
                     <tbody className="text-slate-600">
-                        {paginatedData?.length > 0 ? (
-                            paginatedData.map((row, i) => (
-                                <tr 
-                                    key={getRowId(row) || i} 
-                                    className="border-b border-slate-50 hover:bg-blue-50/30 transition-colors"
-                                >
+                        {displayData?.length > 0 ? (
+                            displayData.map((row, i) => (
+                                <tr key={i} className="border-b border-slate-50 hover:bg-blue-50/30 transition-colors">
                                     {columns?.map(col => (
                                         <td key={col.key || col.label} className="p-4">
-                                            {col.render ? (
-                                                col.render(row, i)
-                                            ) : col.key === 'actions' ? (
-                                                <div className="flex gap-2">
-                                                    {onEdit && (
-                                                        <button
-                                                            onClick={() => onEdit(getRowId(row))}
-                                                            className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-                                                        >
-                                                            <Edit3 size={16} />
-                                                        </button>
-                                                    )}
-                                                    {onDelete && (
-                                                        <button
-                                                            onClick={() => onDelete(getRowId(row))}
-                                                            className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-all"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                row?.[col.key] ?? '-'
-                                            )}
+                                            {col.render ? col.render(row, i) : (row?.[col.key] ?? '-')}
                                         </td>
                                     ))}
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={columns?.length} className="p-10 text-center text-slate-400 italic">
-                                    No records found.
-                                </td>
+                                <td colSpan={columns?.length} className="p-10 text-center text-slate-400 italic">No records found.</td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
 
-            {/* Pagination Area */}
+            {/* Pagination Controls */}
             <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
                 <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
                     <span>Show</span>
                     <select
-                        className="border border-slate-200 rounded-md px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer"
+                        className="border border-slate-200 rounded-md px-2 py-1 outline-none cursor-pointer"
                         value={perPage}
                         onChange={e => pagination?.onLimitChange?.(Number(e.target.value))}
                     >
@@ -162,7 +124,7 @@ const DataTable = ({
                     <button
                         onClick={() => pagination?.onPageChange?.(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="p-2 border border-slate-200 rounded-md disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                        className="p-2 border border-slate-200 rounded-md disabled:opacity-30 hover:bg-slate-50"
                     >
                         <ChevronLeft size={16} />
                     </button>
@@ -170,7 +132,7 @@ const DataTable = ({
                     <button
                         onClick={() => pagination?.onPageChange?.(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="p-2 border border-slate-200 rounded-md disabled:opacity-30 hover:bg-slate-50 transition-colors"
+                        className="p-2 border border-slate-200 rounded-md disabled:opacity-30 hover:bg-slate-50"
                     >
                         <ChevronRight size={16} />
                     </button>

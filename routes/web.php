@@ -58,7 +58,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/premium', [PremiumController::class, 'index'])->name('admin.premium');
-    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports');
+    
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     // Claims Management
       Route::get('/claims', [ClaimController::class, 'index'])->name('claims.index');
