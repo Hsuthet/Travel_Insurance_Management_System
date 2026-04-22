@@ -18,22 +18,33 @@ use Carbon\Carbon;
 
 class ContractController extends Controller
 {
+   
     public function index(Request $request)
 {
-    $query = Contract::with(['customer', 'plan']);
+    $query = Contract::with(['customer', 'plan', 'claims']); 
 
-    // 1. Handle Status Filter (including the 'expired' logic)
+    // Status filter
     if ($request->filled('status') && $request->status !== 'Status') {
-        if ($request->status === 'expired') {
-            // Expired = Approved but today is past the end_date
+        if ($request->status === 'claimed') {
+            $query->whereHas('claims'); 
+        } elseif ($request->status === 'expired') {
             $query->where('status', 'approved')
                   ->whereDate('end_date', '<', now());
         } else {
             $query->where('status', $request->status);
         }
     }
+    if ($request->filled('claimStatus') && $request->claimStatus !== 'Claim Status') {
 
-    // 2. Date Filters (Existing)
+    if ($request->claimStatus === 'No Claim') {
+        $query->doesntHave('claims');
+    } else {
+        $query->whereHas('claims', function ($q) use ($request) {
+            $q->where('claim_status', strtolower($request->claimStatus));
+        });
+    }
+}
+    // Date filters
     if ($request->filled('startDate')) {
         $query->whereDate('created_at', '>=', $request->startDate);
     }
@@ -41,11 +52,14 @@ class ContractController extends Controller
         $query->whereDate('created_at', '<=', $request->endDate);
     }
 
+    // ✅ Correct pagination
+    $perPage = $request->input('per_page', 10);
+
     $contracts = $query->latest()
-        ->paginate(10)
+        ->paginate($perPage)
         ->withQueryString();
 
-    // Check for API requests
+    // API response
     if ($request->wantsJson() || $request->is('api/*')) {
         return response()->json([
             'status' => true,
@@ -55,7 +69,6 @@ class ContractController extends Controller
 
     return Inertia::render('Admin/ContractList', [
         'contracts' => $contracts,
-        // Send back all filters so the UI stays in sync
         'filters' => $request->only(['status', 'startDate', 'endDate']),
     ]);
 }

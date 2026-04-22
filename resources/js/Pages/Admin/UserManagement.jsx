@@ -35,7 +35,6 @@ export default function UserManagement({ users, auth, filters }) {
         const styles = {
             'superadmin': 'bg-purple-100 text-purple-700 border-purple-200',
             'admin':      'bg-blue-100 text-blue-700 border-blue-200',
-            'editor':     'bg-emerald-100 text-emerald-700 border-emerald-200',
         };
 
         return (
@@ -149,7 +148,7 @@ export default function UserManagement({ users, auth, filters }) {
                                         <option value="role">Role</option>
                                         <option value="superadmin">Superadmin</option>
                                         <option value="admin">Admin</option>
-                                        <option value="editor">Editor</option>
+                                        
                                     </select>
                                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>

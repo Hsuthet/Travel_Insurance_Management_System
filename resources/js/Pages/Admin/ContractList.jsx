@@ -8,6 +8,7 @@ export default function ContractList({ contracts, auth, filters }) {
     console.log("Contracts Data:", contracts);
     // 1. Local States for filtering
     const [status, setStatus] = useState(filters.status || 'Status');
+    const [claimStatus, setClaimStatus] = useState(filters.claimStatus || 'Claim Status'); // New
     const [startDate, setStartDate] = useState(filters.startDate || '');
     const [endDate, setEndDate] = useState(filters.endDate || '');
 
@@ -16,61 +17,85 @@ export default function ContractList({ contracts, auth, filters }) {
 
     const planNames = { 1: 'Basic', 2: 'Standard', 3: 'Premium' };
 
-    // 2. Status Badge Renderer
-const renderStatus = (row) => {
-    // 1. Get the actual status from the database first
-    const dbStatus = row.status ? String(row.status).toLowerCase().replace('_', ' ') : 'default';
-    
-    // 2. Determine the display key
-    let displayKey = dbStatus;
-
-    // 3. ONLY override with 'expired' if it's currently an active-type status
-    // This prevents 'claimed' or 'canceled' from being overwritten by 'expired'
-    const activeStatuses = ['active', 'approved', 'wait pay', 'pending'];
-    if (row.is_expired && activeStatuses.includes(dbStatus)) {
-        displayKey = 'expired';
+  const renderClaimStatus = (claim) => {
+    // If no claim exists in the array
+    if (!claim || !claim.claim_status) {
+        return (
+            <span className="px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-tight bg-slate-100 text-slate-400 border-slate-200">
+                No Claim
+            </span>
+        );
     }
 
+    // Normalize DB value for style matching
+    const statusVal = String(claim.claim_status).toLowerCase();
+    
     const styles = {
-        'active':   'bg-emerald-100 text-emerald-700 border-emerald-200',
-        'approved': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-        'expired':  'bg-rose-100 text-rose-700 border-rose-200',
-        'claimed':  'bg-indigo-100 text-indigo-700 border-indigo-200',
-        'cancel':   'bg-amber-100 text-amber-700 border-amber-200',
         'pending':  'bg-orange-100 text-orange-700 border-orange-200',
-        'wait pay': 'bg-blue-100 text-blue-700 border-blue-200', 
-        'rejected': 'bg-purple-100 text-purple-700 border-purple-200',
+        'approved': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        'rejected': 'bg-rose-100 text-rose-700 border-rose-200',
     };
 
     return (
-        <span className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-wider ${styles[displayKey] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-            {displayKey}
+        <span className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-tight ${styles[statusVal] || 'bg-blue-100 text-blue-700 border-blue-200'}`}>
+            {claim.claim_status}
         </span>
     );
 };
-    // 3. Reset Function
-    const resetFilters = () => {
-        setStatus('Status');
-        setStartDate('');
-        setEndDate('');
-        router.get(route('admin.contracts.index'), {}, { 
-            replace: true, 
-            preserveScroll: true 
-        });
+
+    // 2. Updated Status: Removed "Claimed" override to keep it purely for Contract state
+    const renderStatus = (row) => {
+        const dbStatus = row.status ? String(row.status).toLowerCase().replace('_', ' ') : 'default';
+        let displayKey = dbStatus;
+
+        // Logic for expiration remains, but we strictly use the contract status
+        const activeStatuses = ['active', 'approved', 'wait pay', 'pending'];
+        if (row.is_expired && activeStatuses.includes(dbStatus)) {
+            displayKey = 'expired';
+        }
+
+        const styles = {
+            'active':   'bg-emerald-100 text-emerald-700 border-emerald-200',
+            'approved': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+            'expired':  'bg-rose-100 text-rose-700 border-rose-200',
+            'cancel':   'bg-amber-100 text-amber-700 border-amber-200',
+            'pending':  'bg-orange-100 text-orange-700 border-orange-200',
+            'wait pay': 'bg-blue-100 text-blue-700 border-blue-200', 
+            'rejected': 'bg-purple-100 text-purple-700 border-purple-200',
+        };
+
+        return (
+            <span className={`px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-wider ${styles[displayKey] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                {displayKey}
+            </span>
+        );
     };
+  
+
+    // 3. Reset Function
+ const resetFilters = () => {
+    setStatus('Status');
+    setClaimStatus('Claim Status'); // Reset this too
+    setStartDate('');
+    setEndDate('');
+    router.get(route('admin.contracts.index'), {}, { 
+        replace: true, 
+        preserveScroll: true 
+    });
+};
 
     // 3.5 Filter Trigger (The "Brain" of the filters)
-    useEffect(() => {
-    // Prevent reload on first component mount
+   useEffect(() => {
     if (isFirstRender.current) {
         isFirstRender.current = false;
         return;
     }
 
     const queryParams = {};
-
-    // Only add to URL if a real filter is picked
-    if (status !== 'Status') queryParams.status = status;
+    
+    // Only add to query if it's not the default placeholder
+    if (status && status !== 'Status') queryParams.status = status;
+    if (claimStatus && claimStatus !== 'Claim Status') queryParams.claimStatus = claimStatus;
     if (startDate) queryParams.startDate = startDate;
     if (endDate) queryParams.endDate = endDate;
 
@@ -79,44 +104,28 @@ const renderStatus = (row) => {
             preserveState: true,
             replace: true,
             preserveScroll: true,
-            only: ['contracts', 'filters']
+            only: ['contracts', 'filters'] // Optimization: only reload the data and filters
         });
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-}, [status, startDate, endDate]);
+}, [status, claimStatus, startDate, endDate]);
 
     // 4. Columns Definition
-   const columns = [
+   // --- Updated Columns Definition ---
+const columns = [
     { 
         label: 'No', 
         key: 'id', 
-        // In your DataTable, the first arg is the whole row
-        render: (row, index) => {
-            return (contracts.current_page - 1) * contracts.per_page + (index + 1);
-        }
+        render: (row, index) => (contracts.current_page - 1) * contracts.per_page + (index + 1)
     },
-    { 
-        label: 'Policy No', 
-        key: 'policy_no', 
-        render: (row) => row.policy_no || '-' 
-    },
+    { label: 'Policy No', key: 'policy_no', render: (row) => row.policy_no || '-' },
     { 
         label: 'Customer', 
         key: 'customer', 
-        // This was the crasher: row.customer was likely undefined because 
-        // you might have been expecting the first arg to be the customer object
-        render: (row) => (
-            <span className="font-bold text-slate-700">
-                {row.customer?.name || 'N/A'}
-            </span>
-        ) 
+        render: (row) => <span className="font-bold text-slate-700">{row.customer?.name || 'N/A'}</span> 
     },
-    { 
-        label: 'Plan', 
-        key: 'plan_id', 
-        render: (row) => planNames[row.plan_id] || 'Unknown' 
-    },
+    { label: 'Plan', key: 'plan_id', render: (row) => planNames[row.plan_id] || 'Unknown' },
     { 
         label: 'Applied Date', 
         key: 'created_at', 
@@ -127,10 +136,25 @@ const renderStatus = (row) => {
         key: 'premium_amount',
         render: (row) => <span className="font-bold">{Number(row.premium_amount).toLocaleString()}</span>
     },
+    /* FIX: Separate renderers for Status and Claim Status */
     { 
-    label: 'Status', 
-    key: 'status',
-    render: (row) => <div className="flex justify-center">{renderStatus(row)}</div> 
+        label: 'Status', 
+        key: 'status',
+        render: (row) => <div className="flex justify-center">{renderStatus(row)}</div> 
+    },
+  { 
+    label: 'Claim Status', 
+    key: 'claim_status',
+    render: (row) => {
+        // Since it's a hasMany relationship, 'claims' is an array
+        const latestClaim = row.claims && row.claims.length > 0 ? row.claims[0] : null;
+        
+        return (
+            <div className="flex justify-center">
+                {renderClaimStatus(latestClaim)}
+            </div>
+        );
+    }
 },
     { 
         label: 'Action', 
@@ -186,6 +210,22 @@ const renderStatus = (row) => {
                                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                 </div>
 
+                                <div className="relative">
+                                    <select
+                                        value={claimStatus}
+                                        onChange={(e) => setClaimStatus(e.target.value)}
+                                        className="appearance-none bg-[#E2E8F0] border-none rounded-xl px-6 py-2.5 text-sm font-bold text-slate-500 pr-10 cursor-pointer focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="Claim Status">Claim Status</option>
+                                        <option value="No Claim">No Claim</option>
+                                        <option value="Claimed">Claimed</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Rejected">Rejected</option>
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
+                              
+
                                 {/* Date Range Picker */}
                                 <div className="flex items-center gap-2 bg-[#E2E8F0] rounded-xl px-4 py-1.5 border-none">
                                     <Calendar size={18} className="text-slate-500" />
@@ -216,11 +256,36 @@ const renderStatus = (row) => {
 
                     {/* Table Section */}
                     <div className="contract-datatable-container p-2">
-                        <DataTable 
-                            columns={columns} 
-                            data={contracts.data} 
-                            pagination={contracts}
-                        />
+                      <DataTable 
+                        title="Contract List"
+                        columns={columns}
+                        data={contracts.data} 
+                       pagination={{
+    current_page: contracts.current_page,
+    last_page: contracts.last_page,
+    per_page: contracts.per_page,
+    onPageChange: (page) => {
+        router.get(route('admin.contracts.index'), { 
+            page: page,
+            per_page: contracts.per_page,
+            status: status !== 'Status' ? status : null,
+            claimStatus: claimStatus !== 'Claim Status' ? claimStatus : null, // Added
+            startDate: startDate,
+            endDate: endDate
+        }, { preserveState: true, preserveScroll: true })
+    },
+    onLimitChange: (limit) => {
+        router.get(route('admin.contracts.index'), { 
+            page: 1,
+            per_page: limit,
+            status: status !== 'Status' ? status : null,
+            claimStatus: claimStatus !== 'Claim Status' ? claimStatus : null, // Added
+            startDate: startDate,
+            endDate: endDate
+        }, { preserveState: true, preserveScroll: true })
+    }
+}}
+                    />
                     </div>
                 </div>
             </div>
