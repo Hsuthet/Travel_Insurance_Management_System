@@ -14,7 +14,6 @@ class ReportController extends Controller
 
 public function index(Request $request)
 {
-    // Filter parameters တွေကို ယူမယ်
     $perPage = $request->input('perPage', 5);
     $status = $request->input('status');
     $claimStatus = $request->input('claimStatus');
@@ -24,12 +23,48 @@ public function index(Request $request)
     $query = Contract::with(['customer', 'plan', 'claims', 'payments', 'beneficiary'])      
         ->whereNotNull('policy_no');
 
-    // --- Filtering Logic (Database level မှာ စစ်ထုတ်မယ်) ---
-    if ($status && $status !== 'Status') {
+  // --- Filtering Logic ---
+
+if ($status && !in_array($status, ['Status', 'all', ''])) {
+    $today = \Carbon\Carbon::now()->format('Y-m-d');
+
+    if (strtolower($status) === 'expired') {
+        
+        $query->where(function($q) use ($today) {
+            $q->where('status', 'expired')
+              ->orWhere(function($sub) use ($today) {
+                  $sub->where('status', 'active')
+                      ->where('end_date', '<', $today);
+              });
+        });
+    } 
+    elseif (strtolower($status) === 'active') {
+        
+        $query->where('status', 'active')
+              ->where('end_date', '>=', $today);
+    } 
+    else {
+      
         $query->where('status', strtolower($status));
-    } else {
-        $query->whereIn('status', ['active', 'expired', 'canceled']);
     }
+} 
+elseif ($claimStatus && !in_array($claimStatus, ['Claim Status', ''])) {
+   
+    $searchStatus = strtolower($claimStatus); 
+
+    if ($searchStatus === 'no claim') {
+        $query->doesntHave('claims');
+    } else {
+        $query->whereHas('claims', function($q) use ($searchStatus) {
+            $dbValue = ($searchStatus === 'claimed') ? 'accepted' : $searchStatus;
+            $q->where('claim_status', $dbValue);
+        });
+    }
+} 
+else {
+    
+    $query->whereIn('status', ['active', 'expired', 'canceled']);
+}
 
     if ($startDate && $endDate) {
         $query->whereBetween('created_at', [
@@ -45,6 +80,18 @@ public function index(Request $request)
         $customer = $contract->customer;
         $beneficiary = $contract->beneficiary;
         $dbStatus = strtolower($contract->status);
+    $finalStatus = $dbStatus;
+
+   
+    $today = \Carbon\Carbon::now()->startOfDay();
+    
+    $endDate = $contract->end_date ? \Carbon\Carbon::parse($contract->end_date)->startOfDay() : null;
+
+    
+    if ($dbStatus === 'active' && $endDate && $today->greaterThan($endDate)) {
+        $finalStatus = 'expired';}
+        
+       
         $latestClaim = $contract->claims->sortByDesc('updated_at')->first();
 
         return [
@@ -56,7 +103,7 @@ public function index(Request $request)
             'purchase_date' => $payment && $payment->pay_date 
                                 ? \Carbon\Carbon::parse($payment->pay_date)->format('d-m-Y') 
                                 : $contract->created_at->format('d-m-Y'),
-            'status'        => $dbStatus,
+            'status'        => $finalStatus,
             'claim_status'  => ($latestClaim)
                                 ? match (strtolower($latestClaim->claim_status)) { 
                                     'accepted' => 'Claimed',

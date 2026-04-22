@@ -15,22 +15,20 @@ export default function Reports({ auth, reports, filters }) {
     const [perPage, setPerPage] = useState(filters?.perPage || 5);
 
    
-    const applyFilters = (newParams) => {
-        const allParams = {
-            perPage: perPage,
-            status: contractStatus,
-            claimStatus: claimStatus,
-            startDate: startDate,
-            endDate: endDate,
-            ...newParams 
-        };
-
-        router.get(route('reports.index'), allParams, {
-            preserveScroll: true,
-            replace: true,
-            preserveState: true
-        });
-    };
+   const applyFilters = (newParams) => {
+    
+    router.get(route('reports.index'), {
+        perPage: newParams.perPage || perPage,
+        status: newParams.status,
+        claimStatus: newParams.claimStatus,
+        startDate: newParams.startDate || startDate,
+        endDate: newParams.endDate || endDate,
+        page: newParams.page || 1,
+    }, {
+        preserveScroll: true,
+        replace: true
+    });
+};
 
     const handleEntriesChange = (e) => {
         const value = e.target.value;
@@ -76,7 +74,7 @@ export default function Reports({ auth, reports, filters }) {
         );
     };    
 
-    // Excel export logic (အရောင်တွေ အကုန်ပြန်ထည့်ပေးထားတယ်)
+    
     const downloadExcel = async () => {
         const rawData = Array.isArray(reports.data) ? reports.data : [];
         if (rawData.length === 0) return;
@@ -144,7 +142,7 @@ export default function Reports({ auth, reports, filters }) {
         saveAs(new Blob([buffer]), `Insurance_Report.xlsx`);
     };
 
-const displayData = useMemo(() => {
+    const displayData = useMemo(() => {
    
     const rawData = reports?.data || []; 
     
@@ -181,9 +179,20 @@ const displayData = useMemo(() => {
 
                             <div className="flex flex-wrap items-center justify-end gap-3 w-full">
                                 <div className="flex items-center gap-3">
-                                    <select 
+                                   <select 
                                         value={contractStatus}
-                                        onChange={(e) => { setContractStatus(e.target.value); applyFilters({ status: e.target.value, page: 1 }); }}
+                                        onChange={(e) => { 
+                                            const val = e.target.value;
+                                            setContractStatus(val); 
+                                            setClaimStatus('Claim Status'); 
+                                            
+                                        
+                                            applyFilters({ 
+                                                status: val, 
+                                                claimStatus: 'Claim Status', 
+                                                page: 1 
+                                            }); 
+                                        }}
                                         className="appearance-none bg-[#E2E8F0] border-none rounded-xl px-6 py-2.5 text-sm font-bold text-slate-500 pr-10 cursor-pointer focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="Status">Status</option>
@@ -192,9 +201,20 @@ const displayData = useMemo(() => {
                                         <option value="canceled">Canceled</option>
                                     </select>
 
-                                    <select 
-                                        value={claimStatus}
-                                        onChange={(e) => { setClaimStatus(e.target.value); applyFilters({ claimStatus: e.target.value, page: 1 }); }}
+                                   <select 
+                                    value={claimStatus}
+                                    onChange={(e) => { 
+                                        const val = e.target.value;
+                                        setClaimStatus(val); 
+                                        setContractStatus('Status'); 
+
+                                    
+                                        applyFilters({ 
+                                            claimStatus: val, 
+                                            status: 'Status', 
+                                            page: 1 
+                                        }); 
+                                    }}
                                         className="appearance-none bg-[#E2E8F0] border-none rounded-xl px-6 py-2.5 text-sm font-bold text-slate-500 pr-10 cursor-pointer focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="Claim Status">Claim Status</option>
