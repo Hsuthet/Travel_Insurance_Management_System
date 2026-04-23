@@ -56,8 +56,11 @@ elseif ($claimStatus && !in_array($claimStatus, ['Claim Status', ''])) {
         $query->doesntHave('claims');
     } else {
         $query->whereHas('claims', function($q) use ($searchStatus) {
-            $dbValue = ($searchStatus === 'claimed') ? 'accepted' : $searchStatus;
-            $q->where('claim_status', $dbValue);
+           if ($searchStatus === 'claimed') {
+            $q->whereIn('claim_status', ['claimed', 'accepted']);
+        } else {
+            $q->where('claim_status', $searchStatus);
+        }
         });
     }
 } 
@@ -107,6 +110,7 @@ else {
             'claim_status'  => ($latestClaim)
                                 ? match (strtolower($latestClaim->claim_status)) { 
                                     'accepted' => 'Claimed',
+                                    'claimed'  => 'Claimed',
                                     'pending'  => 'Pending',
                                     'rejected' => 'Rejected',
                                     default    => 'No Claim',
