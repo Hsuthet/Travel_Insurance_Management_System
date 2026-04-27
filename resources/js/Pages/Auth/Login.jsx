@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError';
 import Checkbox from '@/Components/Checkbox';
 
 export default function Login({ status, canResetPassword }) {
+    console.log("Can Reset Password:", canResetPassword);
     const [showPassword, setShowPassword] = useState(false);
     const { flash } = usePage().props;
     
@@ -137,14 +138,12 @@ export default function Login({ status, canResetPassword }) {
                             <span className="ml-2 text-sm text-gray-600 group-hover:text-gray-900 transition-colors">Remember me</span>
                         </label>
 
-                        {canResetPassword && (
-                            <Link
-                                href={route('password.request')}
-                                className="text-sm font-bold text-[#3B82F6] hover:text-blue-700 transition-colors"
-                            >
-                                Forgot Password?
-                            </Link>
-                        )}
+                      <Link
+    href={route('password.request')}
+    className="text-sm font-bold text-[#3B82F6] hover:text-blue-700 transition-colors"
+>
+    Forgot Password?
+</Link>
                     </div>
 
                     <div className="pt-2">
