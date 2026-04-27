@@ -62,7 +62,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     // Claims Management
-      Route::get('/claims', [ClaimController::class, 'index'])->name('claims.index');
+    Route::get('/claims', [ClaimController::class, 'index'])->name('claims.index');
     Route::get('/claims/create', [ClaimController::class, 'create'])->name('claims.create');
     Route::post('/claims', [ClaimController::class, 'store'])->name('claims.store');
     Route::get('/claims/{id}/edit', [ClaimController::class, 'edit'])->name('claims.edit');

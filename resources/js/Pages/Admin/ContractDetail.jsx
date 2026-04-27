@@ -3,7 +3,6 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 
 export default function ContractDetail({ contract, auth }) {
-    // 1. Add state for the confirmation logic
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [pendingStatus, setPendingStatus] = useState(null);
 
@@ -14,13 +13,11 @@ export default function ContractDetail({ contract, auth }) {
         return dateString.split('T')[0];
     };
 
-    // 2. The trigger function that opens the modal
     const triggerConfirm = (status) => {
         setPendingStatus(status);
         setShowConfirmModal(true);
     };
 
-    // 3. The final submission function
     const handleFinalSubmit = () => {
         setShowConfirmModal(false);
         router.put(route('contracts.update-status', contract.contract_id), {
@@ -48,7 +45,6 @@ export default function ContractDetail({ contract, auth }) {
                     </div>
 
                     <div className="space-y-6">
-                        {/* Customer Info Card */}
                         <section className="bg-white rounded-xl p-6 shadow-sm">
                             <h3 className="font-bold text-lg mb-4 border-b pb-2 text-blue-700">Customer Info</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-4 gap-x-8 text-sm">
@@ -64,7 +60,6 @@ export default function ContractDetail({ contract, auth }) {
                             </div>
                         </section>
 
-                        {/* Travel Info Card */}
                         <section className="bg-white rounded-xl p-6 shadow-sm">
                             <h3 className="font-bold text-lg mb-4 border-b pb-2 text-blue-700">Insurance & Travel Details</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-4 gap-x-8 text-sm">
@@ -80,7 +75,6 @@ export default function ContractDetail({ contract, auth }) {
                             </div>
                         </section>
 
-                        {/* Beneficiary Info */}
                         {contract.beneficiary && (
                             <section className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-fuchsia-400">
                                 <h3 className="font-bold text-lg mb-4 border-b pb-2 text-fuchsia-700">Beneficiary Person</h3>
@@ -89,13 +83,11 @@ export default function ContractDetail({ contract, auth }) {
                                     <p><span className="font-semibold text-gray-600">Phone:</span> {contract.beneficiary.phone}</p>
                                     <p><span className="font-semibold text-gray-600">Relationship:</span> {contract.beneficiary.relationship}</p>
                                     <p><span className="font-semibold text-gray-600">NRC:</span> {contract.beneficiary.nrc || 'N/A'}</p>
-                                    <p><span className="font-semibold text-gray-600">Passport:</span> {contract.beneficiary.passport || 'N/A'}</p>
                                 </div>
                             </section>
                         )}
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex justify-end gap-4 mt-8">
                         {contract.status === 'pending' && (
                             <>
@@ -109,7 +101,7 @@ export default function ContractDetail({ contract, auth }) {
                                     onClick={() => triggerConfirm('wait_pay')}
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-2 rounded-xl font-bold shadow-md transition"
                                 >
-                                    Approve (Confirm)
+                                    Approve 
                                 </button>
                             </>
                         )}
@@ -132,7 +124,6 @@ export default function ContractDetail({ contract, auth }) {
                     </div>
                 </div>
 
-                {/* 4. The Confirmation Modal (Styled exactly like your Claim page) */}
                 {showConfirmModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
                         <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">

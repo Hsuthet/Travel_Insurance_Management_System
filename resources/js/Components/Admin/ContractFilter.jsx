@@ -3,7 +3,6 @@ import { Calendar, ChevronDown } from 'lucide-react';
 
 export default function ContractFilter({ values, onChange, onClear, statusOptions }) {
     
-    // Optional: Prevent selecting an end date earlier than the start date
     const handleStartDateChange = (e) => {
         onChange('startDate', e.target.value);
     };
@@ -18,7 +17,6 @@ export default function ContractFilter({ values, onChange, onClear, statusOption
             <div className="relative">
                 <select
                     value={values.status}
-                    // Normalize to lowercase if your backend expects 'active' instead of 'Active'
                     onChange={(e) => onChange('status', e.target.value.toLowerCase())}
                     className="appearance-none bg-[#E0E0E0] border-none rounded-xl px-4 py-2 pr-10 text-sm font-medium text-gray-600 focus:ring-2 focus:ring-blue-300 cursor-pointer transition-all"
                 >
@@ -55,7 +53,7 @@ export default function ContractFilter({ values, onChange, onClear, statusOption
                         type="date"
                         placeholder="End Date"
                         value={values.endDate || ''}
-                        min={values.startDate} // User cannot pick end date before start date
+                        min={values.startDate} 
                         onChange={handleEndDateChange}
                         className="bg-transparent border-none p-0 text-sm text-gray-700 focus:ring-0 w-32 cursor-pointer"
                     />
