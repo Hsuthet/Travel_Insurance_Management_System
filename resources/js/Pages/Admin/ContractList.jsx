@@ -216,7 +216,8 @@ export default function ContractList({ contracts, auth, filters }) {
                                 <option value="Pending">Pending</option>
                                 <option value="Wait_pay">Wait Pay</option>
                                 <option value="Expired">Expired</option>
-                                <option value="Cancel">Cancel</option>
+                                <option value="Canceled">Canceled</option>
+                                <option value="Rejected">Rejected</option>
                             </select>
                             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         </div>
