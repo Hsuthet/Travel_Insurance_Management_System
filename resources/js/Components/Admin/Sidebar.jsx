@@ -8,9 +8,9 @@ export default function Sidebar() {
 
     const menuItems = [
         { name: 'Dash Board', icon: <LayoutDashboard size={20}/>, url: '/admin/dashboard' },
-{ name: 'Contract List', icon: <FileText size={20}/>, url: route('admin.contracts.index') },
+{ name: 'Contract List', icon: <FileText size={20}/>, url: '/admin/contracts' },
        
-{ name: 'Insurance Premium', icon: <CreditCard size={20}/>, url: route('admin.premium') },
+{ name: 'Insurance Premium', icon: <CreditCard size={20}/>, url: '/admin/premium' },
         { name: 'Claims & Benefits', icon: <ShieldCheck size={20}/>, url: '/admin/claims' },
         { name: 'Reports', icon: <PieChart size={20}/>, url: '/admin/reports' },
         { 
