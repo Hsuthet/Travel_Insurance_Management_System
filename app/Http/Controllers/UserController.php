@@ -12,28 +12,50 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-  public function index(Request $request)
+public function index(Request $request)
 {
-    $users = User::query()
-        // 1. Filter by Role (matches your React 'role' state)
-        ->when($request->role && $request->role !== 'role', function ($query) use ($request) {
-            $query->where('role', $request->role);
-        })
-        // 2. Filter by Date Range
-        ->when($request->startDate, function ($query, $startDate) {
-            $query->whereDate('created_at', '>=', $startDate);
-        })
-        ->when($request->endDate, function ($query, $endDate) {
-            $query->whereDate('created_at', '<=', $endDate);
-        })
-        // 3. Finalize Query
-        ->latest()
-        ->paginate($request->perPage ?? 10)
-        ->withQueryString(); // Keeps filters active when clicking page numbers
+    $query = User::query();
+
+    // 1. Search Filter (Name or Email)
+    if ($request->filled('search')) {
+        $query->where(function($q) use ($request) {
+            $q->where('name', 'like', "%{$request->search}%")
+              ->orWhere('email', 'like', "%{$request->search}%");
+        });
+    }
+
+    // 2. Role Filter
+    if ($request->filled('role') && $request->role !== 'All Roles') {
+        $query->where('role', $request->role);
+    }
+
+    // 3. Date Filters
+    if ($request->filled('startDate')) {
+        $query->whereDate('created_at', '>=', $request->startDate);
+    }
+    if ($request->filled('endDate')) {
+        $query->whereDate('created_at', '<=', $request->endDate);
+    }
+
+    // 4. Pagination (Matching your 'per_page' frontend key)
+    $perPage = $request->input('per_page', 10);
+
+    $users = $query->latest()
+        ->paginate($perPage)
+        ->withQueryString(); // 关键: Maintains filters during page navigation
+
+    // API response support
+    if ($request->wantsJson() || $request->is('api/*')) {
+        return response()->json([
+            'status' => true,
+            'users' => $users
+        ]);
+    }
 
     return Inertia::render('Admin/UserManagement', [
         'users' => $users,
-        'filters' => $request->only(['role', 'startDate', 'endDate', 'perPage']),
+        // Ensure ALL filter keys are sent back to React
+        'filters' => $request->only(['search', 'role', 'startDate', 'endDate', 'per_page']),
     ]);
 }
 
@@ -41,7 +63,7 @@ class UserController extends Controller
     {
         return Inertia::render('Admin/UserForm');
     }
-    
+
     public function store(Request $request)
 {
     // 1. Validation - Matches your React form options exactly
