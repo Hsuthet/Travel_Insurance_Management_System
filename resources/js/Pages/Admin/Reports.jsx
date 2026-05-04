@@ -221,7 +221,7 @@ export default function Reports({ auth, reports, filters }) {
 
                         <div className="flex items-center gap-2">
                             <button onClick={downloadExcel} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-sm flex items-center gap-2">
-                                <FileDown size={18} /> Excel
+                                <FileDown size={18} /> Export
                             </button>
                             <button onClick={resetFilters} className="bg-blue-100 hover:bg-blue-200 text-blue-600 font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-sm">
                                 Clear
