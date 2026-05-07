@@ -85,30 +85,32 @@ export default function ContractList({ contracts, auth, filters }) {
     };
 
     // 3.5 Filter Trigger (The "Brain" of the filters)
-    useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
+  useEffect(() => {
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
+        return;
+    }
 
-        const queryParams = {};
+    const queryParams = {};
+    // Ensure we send what the backend expects (lowercase)
+    if (status && status !== 'Status') queryParams.status = status.toLowerCase();
+    if (claimStatus && claimStatus !== 'Claim Status') queryParams.claimStatus = claimStatus;
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
 
-        if (status && status !== 'Status') queryParams.status = status;
-        if (claimStatus && claimStatus !== 'Claim Status') queryParams.claimStatus = claimStatus;
-        if (startDate) queryParams.startDate = startDate;
-        if (endDate) queryParams.endDate = endDate;
+    const delayDebounceFn = setTimeout(() => {
+        router.get(route('admin.contracts.index'), queryParams, {
+            preserveState: true, // Keep this true to prevent losing focus/input values
+            replace: true,       // Prevents clogging the browser history
+            preserveScroll: true,
+            onSuccess: () => {
+                console.log("Data refreshed successfully!");
+            }
+        });
+    }, 300);
 
-        const delayDebounceFn = setTimeout(() => {
-            router.get(route('admin.contracts.index'), queryParams, {
-                preserveState: true,
-                replace: true,
-                preserveScroll: true,
-                only: ['contracts', 'filters']
-            });
-        }, 300);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [status, claimStatus, startDate, endDate]);
+    return () => clearTimeout(delayDebounceFn);
+}, [status, claimStatus, startDate, endDate]);
 
     // 4. Columns Definition
     const columns = [
@@ -172,6 +174,7 @@ export default function ContractList({ contracts, auth, filters }) {
         <AdminLayout auth={auth}>
             <Head title="Contract List" />
             <DataTable
+                key={`${status}-${claimStatus}-${startDate}-${endDate}`} // Forces fresh mount on filter change
                 title="Contract List"
                 columns={columns}
                 icon={List}
