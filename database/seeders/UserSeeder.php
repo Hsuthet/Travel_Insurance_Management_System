@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
             'name' => 'Super admin',
             'email' => 'superadmin@gmail.com',
             'password' => Hash::make('password123'),
-            'role' => 'superadmin', // Must match exactly what's in your migration/middleware
+            'role' => 'superadmin', 
         ]);
 
         // 2. Create the Admin (Insurance Management only)

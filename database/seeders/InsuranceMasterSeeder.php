@@ -47,7 +47,7 @@ class InsuranceMasterSeeder extends Seeder
         Benefit::create(['plan_id' => $standard->plan_id, 'benefittype_id' => $hospital->benefittype_id, 'max_coverage' => 25000]);
         Benefit::create(['plan_id' => $standard->plan_id, 'benefittype_id' => $cancellation->benefittype_id, 'max_coverage' => 20000]);
 
-        // ၄။ Premium Plan (Hospital + Trip Cancellation + Death)
+        // Premium Plan (Hospital + Trip Cancellation + Death)
         $premium = Plan::create([
             'plan_name' => 'Premium',
             'daily_rate' => 6000,
